@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { FirebaseAuthAdapter, type AuthUser } from '@infrastructure/index';
 import { FirestoreUserRepository } from '@infrastructure/index';
 import { User, UserId } from '@domain/index';
