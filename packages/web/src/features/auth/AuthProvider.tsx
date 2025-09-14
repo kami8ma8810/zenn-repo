@@ -1,9 +1,9 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useEffect, useState, type ReactNode } from 'react';
 import { FirebaseAuthAdapter, type AuthUser } from '@infrastructure/index';
 import { FirestoreUserRepository } from '@infrastructure/index';
 import { User, UserId } from '@domain/index';
 
-interface AuthContextValue {
+export interface AuthContextValue {
   user: AuthUser | null;
   domainUser: User | null;
   signInWithGoogle: () => Promise<void>;
@@ -11,7 +11,7 @@ interface AuthContextValue {
   loading: boolean;
 }
 
-const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -79,12 +79,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
-  }
-  return context;
 }

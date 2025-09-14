@@ -1,4 +1,4 @@
-import { AuthProvider, useAuth } from './features/auth/useAuth';
+import { AuthProvider, useAuth } from './features/auth';
 import { CreatePostForm } from './features/post/CreatePostForm';
 import { Timeline } from './features/timeline/Timeline';
 import { initializeFirebase } from '@infrastructure/firebase/config';
