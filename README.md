@@ -1,121 +1,245 @@
-# DDD × Firebase × React SNS ハンズオン
+# 🎓 DDD × Firebase SNS ハンズオン - 第5章：アプリケーションサービス
 
-ドメイン駆動設計（DDD）を学びながら、実際に動くSNSアプリケーションを作るハンズオン教材です。
+## 📚 この章で学ぶこと
 
-## 📚 章構成とブランチ
+- アプリケーションサービスの役割
+- ドメインサービスとの違い
+- ユースケースの実装
 
-各章ごとにブランチが用意されており、段階的に学習できます：
+## 🎯 学習目標
 
-| 章 | ブランチ名 | 内容 |
-|---|-----------|------|
-| 0 | `chapter-0-setup` | 初期セットアップ |
-| 1 | `chapter-1-domain-basics` | ドメインモデルの基礎 |
-| 2 | `chapter-2-entities-vo` | エンティティと値オブジェクト |
-| 3 | `chapter-3-aggregates` | 集約パターン |
-| 4 | `chapter-4-repository` | リポジトリパターン |
-| 5 | `chapter-5-application-service` | アプリケーションサービス |
-| 6 | `chapter-6-strategic-design` | 戦略的設計（完成版） |
+1. **アプリケーションサービスの理解**
+   - ユースケースの調整役
+   - トランザクション管理
+   - DTOへの変換
 
-## 🚀 はじめ方
+2. **ドメインサービスの活用**
+   - 複数集約にまたがるロジック
+   - ステートレスな設計
+   - ビジネスルールの実装
 
-### 1. 環境準備
+3. **責任の分離**
+   - 各レイヤーの役割
+   - 依存関係の方向
+   - テストの容易性
 
-必要なもの：
-- Node.js 18以上
-- pnpm
-- Firebaseアカウント
-- Git
+## 📂 この章のコード構造
 
-### 2. プロジェクトのクローン
-
-```bash
-git clone [repository-url]
-cd ddd-firebase-sns
+```
+packages/
+├── application/src/
+│   ├── usecases/
+│   │   ├── CreatePost.ts        # TODO: 投稿作成ユースケース
+│   │   ├── FollowUser.ts        # TODO: フォローユースケース
+│   │   └── ToggleLike.ts        # TODO: いいねユースケース
+│   ├── dto/
+│   │   ├── CreatePostInput.ts   # 入力DTO
+│   │   └── CreatePostOutput.ts  # 出力DTO
+│   └── services/
+│       └── FollowDomainService.ts # TODO: ドメインサービス
+└── web/src/
+    └── hooks/
+        └── useCreatePost.ts      # UIからの利用
 ```
 
-### 3. 依存関係のインストール
+## 📝 演習課題
 
-```bash
-pnpm install
-```
-
-### 4. Firebase設定
-
-1. [Firebase Console](https://console.firebase.google.com/)でプロジェクトを作成
-2. 認証、Firestore、Storageを有効化
-3. `.env`ファイルを作成（`.env.example`を参考）
-4. Firebase設定値を記入
-
-詳細は`articles/firebase-setup-guide.md`を参照してください。
-
-### 5. 章の選択
-
-学習したい章のブランチに切り替えます：
-
-```bash
-# 例：第1章から始める場合
-git checkout chapter-1-domain-basics
-```
-
-## 📖 学習の進め方
-
-1. **記事を読む**：`articles/`フォルダ内の該当章の記事を読む
-2. **コードを確認**：現在のブランチのコードを確認
-3. **演習に取り組む**：TODOコメントの箇所を実装
-4. **次の章へ**：完成したら次の章のブランチへ
-
-### 演習の例
-
-各章にはTODOコメントが含まれています：
+### 課題1：CreatePostユースケースの実装
 
 ```typescript
-// TODO: ここにPostエンティティを実装してください
-// ヒント：
-// - idは必須
-// - textとimageUrlのどちらかは必須
-// - 300文字制限
+// TODO: CreatePostユースケースを実装
+export class CreatePostUseCase {
+  constructor(
+    private postRepo: IPostRepository,
+    private userRepo: IUserRepository
+  ) {}
+  
+  async execute(input: CreatePostInput): Promise<CreatePostOutput> {
+    // 1. ユーザーの取得と検証
+    // 2. 投稿の作成（ドメインロジック）
+    // 3. 永続化
+    // 4. DTOへの変換と返却
+  }
+}
 ```
 
-## 🛠️ 開発コマンド
+考慮点：
+- エラーハンドリング
+- トランザクション管理
+- 通知の送信
+
+### 課題2：FollowDomainServiceの実装
+
+```typescript
+// TODO: ドメインサービスを実装
+export class FollowDomainService {
+  // フォロー可否の判定
+  canFollow(follower: User, followee: User): FollowResult {
+    // - 自己フォロー禁止
+    // - ブロック状態チェック
+    // - プライベートアカウント
+  }
+  
+  // 相互フォロー判定
+  isMutualFollow(
+    relation1: FollowRelation,
+    relation2: FollowRelation
+  ): boolean {
+    // ビジネスロジック
+  }
+}
+```
+
+### 課題3：Result型でのエラーハンドリング
+
+```typescript
+// TODO: Result型を使ったエラーハンドリング
+type Result<T, E = Error> = 
+  | { success: true; value: T }
+  | { success: false; error: E };
+
+export class ToggleLikeUseCase {
+  async execute(
+    input: ToggleLikeInput
+  ): Promise<Result<ToggleLikeOutput, LikeError>> {
+    // 成功と失敗を型で表現
+  }
+}
+```
+
+## 🏗️ 実装課題
+
+### ユースケース間の連携
+
+```typescript
+// TODO: 複数のユースケースを組み合わせる
+export class PublishPostUseCase {
+  constructor(
+    private createPost: CreatePostUseCase,
+    private notifyFollowers: NotifyFollowersUseCase,
+    private updateTimeline: UpdateTimelineUseCase
+  ) {}
+  
+  async execute(input: PublishPostInput): Promise<void> {
+    // 1. 投稿作成
+    // 2. フォロワーへの通知
+    // 3. タイムライン更新
+  }
+}
+```
+
+### バリデーションの階層
+
+```typescript
+export class CreatePostUseCase {
+  async execute(input: CreatePostInput) {
+    // 1️⃣ 入力バリデーション（形式）
+    this.validateInput(input);
+    
+    // 2️⃣ 権限チェック（認可）
+    const author = await this.userRepo.findById(input.authorId);
+    if (!author.canPost()) {
+      throw new InsufficientPermissionError();
+    }
+    
+    // 3️⃣ ビジネスルール（ドメイン）
+    const post = Post.create({...});
+    
+    // 4️⃣ 外部制約（重複チェック等）
+    if (await this.isDuplicate(post)) {
+      throw new DuplicatePostError();
+    }
+  }
+}
+```
+
+## 💡 設計のヒント
+
+### アプリケーションサービスのチェックリスト
+
+**やるべきこと：**
+- ✅ ユースケースの流れを制御
+- ✅ ドメインオブジェクトを組み合わせる
+- ✅ トランザクションを管理
+
+**やってはいけないこと：**
+- ❌ ビジネスロジックを実装
+- ❌ 技術的詳細を含める
+- ❌ UIの関心事を扱う
+
+### Fat Controllerを避ける
+
+❌ 悪い例：すべてをControllerに
+```typescript
+class PostController {
+  async create(req: Request) {
+    // バリデーション、ビジネスロジック、
+    // DB操作、通知...すべてここに
+  }
+}
+```
+
+✅ 良い例：適切な責任分離
+```typescript
+class PostController {
+  async create(req: Request) {
+    const input = this.toInput(req);
+    const result = await this.useCase.execute(input);
+    return this.toResponse(result);
+  }
+}
+```
+
+## 🧪 動作確認
 
 ```bash
-# 開発サーバー起動
-pnpm dev
+# ユースケースのテスト
+pnpm test:application
 
-# ビルド
-pnpm build
-
-# テスト実行
-pnpm test
-
-# Firebase Emulator起動
-firebase emulators:start
+# 統合テスト
+pnpm test:integration
 ```
 
-## 🏗️ プロジェクト構造
+### テストの書き方
 
+```typescript
+describe('CreatePostUseCase', () => {
+  let useCase: CreatePostUseCase;
+  let postRepo: MockPostRepository;
+  
+  test('投稿を作成できる', async () => {
+    // Given
+    const input = { authorId: 'user1', text: 'Hello' };
+    
+    // When
+    const result = await useCase.execute(input);
+    
+    // Then
+    expect(result.success).toBe(true);
+    expect(postRepo.saved).toHaveLength(1);
+  });
+});
 ```
-.
-├── packages/
-│   ├── domain/          # ドメイン層
-│   ├── application/     # アプリケーション層
-│   ├── infrastructure/  # インフラ層
-│   └── web/            # プレゼンテーション層（React）
-├── articles/           # 各章の記事
-├── firebase.json       # Firebase設定
-└── README.md          # このファイル
+
+## 🎯 完成の確認
+
+- [ ] CreatePostユースケースが実装されている
+- [ ] FollowDomainServiceが実装されている
+- [ ] エラーハンドリングが適切
+- [ ] 責任が適切に分離されている
+- [ ] テストが書かれている
+
+## 🚀 次の章へ
+
+```bash
+git add .
+git commit -m "完了: 第5章 - アプリケーションサービス"
+git checkout chapter-6-strategic-design
 ```
 
-## 📚 参考資料
+最終章では、戦略的設計と完成版の実装を確認します。
 
-- [ドメイン駆動設計をはじめよう](https://www.amazon.co.jp/dp/479813161X)
-- [Firebase Documentation](https://firebase.google.com/docs)
-- [React Documentation](https://react.dev)
+## 🔗 参考リンク
 
-## 🤔 困ったときは
-
-- 各章の記事の最後にある「よくある質問」を確認
-- GitHubのIssuesで質問
-- 完成版（`main`ブランチ）のコードを参考に
-
-Happy Learning! 🎉
+- [第5回記事：アプリケーションサービス - ユースケースの司令塔](../articles/ddd-firebase-sns-part5-revised.md)
+- [Application Service Pattern](https://www.martinfowler.com/eaaCatalog/serviceLayer.html)
