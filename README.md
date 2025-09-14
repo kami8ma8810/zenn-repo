@@ -1,121 +1,163 @@
-# DDD × Firebase × React SNS ハンズオン
+# 🎓 DDD × Firebase SNS ハンズオン - 第1章：ドメインモデルの基礎
 
-ドメイン駆動設計（DDD）を学びながら、実際に動くSNSアプリケーションを作るハンズオン教材です。
+## 📚 この章で学ぶこと
 
-## 📚 章構成とブランチ
+- ユビキタス言語の定義
+- 境界づけられた文脈の理解
+- 最初のドメインモデル実装
 
-各章ごとにブランチが用意されており、段階的に学習できます：
+## 🎯 学習目標
 
-| 章 | ブランチ名 | 内容 |
-|---|-----------|------|
-| 0 | `chapter-0-setup` | 初期セットアップ |
-| 1 | `chapter-1-domain-basics` | ドメインモデルの基礎 |
-| 2 | `chapter-2-entities-vo` | エンティティと値オブジェクト |
-| 3 | `chapter-3-aggregates` | 集約パターン |
-| 4 | `chapter-4-repository` | リポジトリパターン |
-| 5 | `chapter-5-application-service` | アプリケーションサービス |
-| 6 | `chapter-6-strategic-design` | 戦略的設計（完成版） |
+1. **ユビキタス言語を定義する**
+   - チーム全体で使う共通の語彙
+   - コードに反映される用語
 
-## 🚀 はじめ方
+2. **境界づけられた文脈を識別する**
+   - SNSドメインの分割
+   - 各文脈の責任範囲
 
-### 1. 環境準備
+3. **基本的なドメインモデルを実装する**
+   - PostとUserの基本形
+   - ビジネスルールの表現
 
-必要なもの：
-- Node.js 18以上
-- pnpm
-- Firebaseアカウント
-- Git
+## 📂 この章のコード構造
 
-### 2. プロジェクトのクローン
-
-```bash
-git clone [repository-url]
-cd ddd-firebase-sns
+```
+packages/
+├── domain/
+│   └── src/
+│       ├── post/       # 投稿ドメイン
+│       │   └── Post.ts # TODO: 実装
+│       └── user/       # ユーザードメイン
+│           └── User.ts # TODO: 実装
 ```
 
-### 3. 依存関係のインストール
+## 📝 演習課題
 
-```bash
-pnpm install
-```
+### 課題1：ユビキタス言語の定義
 
-### 4. Firebase設定
+以下の用語を定義してください：
 
-1. [Firebase Console](https://console.firebase.google.com/)でプロジェクトを作成
-2. 認証、Firestore、Storageを有効化
-3. `.env`ファイルを作成（`.env.example`を参考）
-4. Firebase設定値を記入
+| 日本語 | 英語（コード） | 説明 |
+|--------|---------------|------|
+| 投稿 | Post | ? |
+| ユーザー | User | ? |
+| いいね | Like | ? |
+| フォロー | Follow | ? |
 
-詳細は`articles/firebase-setup-guide.md`を参照してください。
+### 課題2：Postエンティティの実装
 
-### 5. 章の選択
-
-学習したい章のブランチに切り替えます：
-
-```bash
-# 例：第1章から始める場合
-git checkout chapter-1-domain-basics
-```
-
-## 📖 学習の進め方
-
-1. **記事を読む**：`articles/`フォルダ内の該当章の記事を読む
-2. **コードを確認**：現在のブランチのコードを確認
-3. **演習に取り組む**：TODOコメントの箇所を実装
-4. **次の章へ**：完成したら次の章のブランチへ
-
-### 演習の例
-
-各章にはTODOコメントが含まれています：
+`packages/domain/src/post/Post.ts`を実装してください。
 
 ```typescript
-// TODO: ここにPostエンティティを実装してください
-// ヒント：
-// - idは必須
+// TODO: Postクラスを実装
+// 要件：
+// - id, text, imageUrl, authorId, createdAtを持つ
 // - textとimageUrlのどちらかは必須
-// - 300文字制限
+// - textは300文字以内
+// - ビジネスルールをコンストラクタで検証
 ```
 
-## 🛠️ 開発コマンド
+ヒント：
+```typescript
+export class Post {
+  private constructor(
+    // プロパティを定義
+  ) {
+    // バリデーション
+  }
+  
+  static create(args: {
+    // 引数を定義
+  }): Post {
+    // インスタンス生成
+  }
+}
+```
+
+### 課題3：境界づけられた文脈の識別
+
+SNSドメインをどのように分割するか考えてください：
+
+1. **投稿文脈（Content Context）**
+   - 責任：?
+   - 含まれる概念：?
+
+2. **ユーザー文脈（Identity Context）**
+   - 責任：?
+   - 含まれる概念：?
+
+3. **ソーシャル文脈（Social Context）**
+   - 責任：?
+   - 含まれる概念：?
+
+## 🧪 動作確認
 
 ```bash
-# 開発サーバー起動
-pnpm dev
+# TypeScriptのコンパイル確認
+pnpm typecheck
 
-# ビルド
-pnpm build
-
-# テスト実行
+# テストの実行（まだテストはありません）
 pnpm test
-
-# Firebase Emulator起動
-firebase emulators:start
 ```
 
-## 🏗️ プロジェクト構造
+## 💡 ヒント
 
+### ドメインモデルの設計原則
+
+1. **ビジネスルールを中心に考える**
+   - データベースの構造ではなく、ビジネスの制約から始める
+
+2. **不正な状態を作れないようにする**
+   - コンストラクタでバリデーション
+   - 不変条件を守る
+
+3. **ユビキタス言語を使う**
+   - コードと会話で同じ言葉を使う
+
+### よくある間違い
+
+❌ データから設計を始める
+```typescript
+interface PostData {
+  id: string;
+  text: string;
+  // これはただのデータ構造
+}
 ```
-.
-├── packages/
-│   ├── domain/          # ドメイン層
-│   ├── application/     # アプリケーション層
-│   ├── infrastructure/  # インフラ層
-│   └── web/            # プレゼンテーション層（React）
-├── articles/           # 各章の記事
-├── firebase.json       # Firebase設定
-└── README.md          # このファイル
+
+✅ ビジネスルールから設計を始める
+```typescript
+class Post {
+  static create(text: string): Post {
+    if (!text) throw new Error('投稿内容は必須');
+    // ビジネスルールを表現
+  }
+}
 ```
 
-## 📚 参考資料
+## 🎯 完成の確認
 
-- [ドメイン駆動設計をはじめよう](https://www.amazon.co.jp/dp/479813161X)
-- [Firebase Documentation](https://firebase.google.com/docs)
-- [React Documentation](https://react.dev)
+以下ができていれば、この章は完了です：
 
-## 🤔 困ったときは
+- [ ] Postクラスが実装されている
+- [ ] ビジネスルールが検証される
+- [ ] TypeScriptの型チェックが通る
+- [ ] ユビキタス言語が定義されている
 
-- 各章の記事の最後にある「よくある質問」を確認
-- GitHubのIssuesで質問
-- 完成版（`main`ブランチ）のコードを参考に
+## 🚀 次の章へ
 
-Happy Learning! 🎉
+第1章が完了したら、第2章へ進みましょう！
+
+```bash
+git add .
+git commit -m "完了: 第1章 - ドメインモデルの基礎"
+git checkout chapter-2-entities-vo
+```
+
+第2章では、エンティティと値オブジェクトの違いを深く学びます。
+
+## 🔗 参考リンク
+
+- [第1回記事：なぜDDDなのか？](../articles/ddd-firebase-sns-part1-revised.md)
+- [ドメイン駆動設計をはじめよう](https://www.amazon.co.jp/dp/479813161X) - 第1章〜第3章
