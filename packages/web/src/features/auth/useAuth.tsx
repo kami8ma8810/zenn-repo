@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { FirebaseAuthAdapter, AuthUser } from '@infrastructure/firebase/FirebaseAuthAdapter';
-import { FirestoreUserRepository } from '@infrastructure/firebase/FirestoreUserRepository';
+import { FirebaseAuthAdapter, type AuthUser } from '@infrastructure/index';
+import { FirestoreUserRepository } from '@infrastructure/index';
 import { User, UserId } from '@domain/index';
 
 interface AuthContextValue {
