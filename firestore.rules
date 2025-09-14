@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 認証ヘルパー関数
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+    
+    function isValidUser() {
+      return isSignedIn() && 
+        request.resource.data.displayName is string &&
+        request.resource.data.displayName.size() > 0 &&
+        request.resource.data.displayName.size() <= 50;
+    }
+    
+    function isValidPost() {
+      return isSignedIn() &&
+        request.resource.data.text is string &&
+        request.resource.data.text.size() <= 300 &&
+        (request.resource.data.text.size() > 0 || 
+         request.resource.data.imageUrl != null);
+    }
+
+    // ユーザーコレクション
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if isOwner(userId) && isValidUser();
+      allow update: if isOwner(userId) && isValidUser();
+      allow delete: if false;
+    }
+
+    // 投稿コレクション
+    match /posts/{postId} {
+      allow read: if true;
+      allow create: if isSignedIn() && 
+        isValidPost() &&
+        request.resource.data.authorId == request.auth.uid;
+      allow update: if isSignedIn() && 
+        resource.data.authorId == request.auth.uid &&
+        isValidPost();
+      allow delete: if isSignedIn() && 
+        resource.data.authorId == request.auth.uid;
+    }
+
+    // フォロー関係コレクション
+    match /follows/{followerId}/to/{followeeId} {
+      allow read: if isSignedIn();
+      allow create: if isOwner(followerId) && 
+        followerId != followeeId &&
+        request.resource.data.keys().hasOnly(['createdAt']);
+      allow update: if false;
+      allow delete: if isOwner(followerId);
+    }
+
+    // いいねコレクション
+    match /likes/{postId}/by/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isOwner(userId) &&
+        request.resource.data.keys().hasOnly(['createdAt']);
+      allow update: if false;
+      allow delete: if isOwner(userId);
+    }
+  }
+}

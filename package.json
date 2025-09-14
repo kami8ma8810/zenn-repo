@@ -1,0 +1,23 @@
+{
+  "name": "sns-ddd-firebase",
+  "version": "1.0.0",
+  "private": true,
+  "description": "小さなSNSを作りながら学ぶDDD - All Firebaseで実装",
+  "scripts": {
+    "dev": "pnpm -C packages/web dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "emulator": "firebase emulators:start",
+    "deploy": "pnpm build && firebase deploy"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}
