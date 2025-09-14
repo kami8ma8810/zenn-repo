@@ -1,121 +1,253 @@
-# DDD × Firebase × React SNS ハンズオン
+# 🎓 DDD × Firebase SNS ハンズオン - 第6章：戦略的設計と完成版
 
-ドメイン駆動設計（DDD）を学びながら、実際に動くSNSアプリケーションを作るハンズオン教材です。
+## 🎉 おめでとうございます！
 
-## 📚 章構成とブランチ
+ここまで来たあなたは、DDDの基本的な戦術パターンをマスターしました。
+最終章では、戦略的設計を学び、完成版のコードを確認します。
 
-各章ごとにブランチが用意されており、段階的に学習できます：
+## 📚 この章で学ぶこと
 
-| 章 | ブランチ名 | 内容 |
-|---|-----------|------|
-| 0 | `chapter-0-setup` | 初期セットアップ |
-| 1 | `chapter-1-domain-basics` | ドメインモデルの基礎 |
-| 2 | `chapter-2-entities-vo` | エンティティと値オブジェクト |
-| 3 | `chapter-3-aggregates` | 集約パターン |
-| 4 | `chapter-4-repository` | リポジトリパターン |
-| 5 | `chapter-5-application-service` | アプリケーションサービス |
-| 6 | `chapter-6-strategic-design` | 戦略的設計（完成版） |
+- 境界づけられた文脈の発見
+- コンテキストマッピング
+- イベントストーミング
+- 完成版の実装確認
 
-## 🚀 はじめ方
+## 🎯 学習目標
 
-### 1. 環境準備
+1. **戦略的設計の理解**
+   - ビジネスドメインの分析
+   - 文脈の境界決定
+   - チーム構造との整合
 
-必要なもの：
-- Node.js 18以上
-- pnpm
-- Firebaseアカウント
-- Git
+2. **イベントストーミング**
+   - ドメインイベントの発見
+   - 集約の識別
+   - プロセスの可視化
 
-### 2. プロジェクトのクローン
+3. **完成版の動作確認**
+   - 全機能の統合
+   - デプロイメント
+   - 運用考慮事項
 
-```bash
-git clone [repository-url]
-cd ddd-firebase-sns
+## 📂 完成版のコード構造
+
+```
+packages/
+├── domain/           # 完全なドメインモデル
+│   ├── post/
+│   ├── user/
+│   ├── followRelation/
+│   └── like/
+├── application/      # すべてのユースケース
+│   ├── usecases/
+│   └── services/
+├── infrastructure/   # Firebase統合
+│   ├── firebase/
+│   └── adapters/
+└── web/             # React UI
+    ├── components/
+    ├── hooks/
+    └── pages/
 ```
 
-### 3. 依存関係のインストール
+## 🎨 イベントストーミング演習
+
+### ステップ1：ドメインイベントを洗い出す
+
+付箋を使って、SNSで起きるイベントを書き出してください：
+
+```
+[ユーザーが登録された]
+[投稿が作成された]
+[いいねされた]
+[フォローされた]
+[コメントが追加された]
+[投稿が削除された]
+[ユーザーがブロックされた]
+```
+
+### ステップ2：時系列に並べる
+
+```
+登録 → プロフィール設定 → 投稿 → いいね/コメント → ...
+```
+
+### ステップ3：集約を見つける
+
+イベントをグループ化して集約を発見：
+
+- **User集約**: 登録、プロフィール更新
+- **Post集約**: 投稿作成、編集、削除
+- **FollowRelation集約**: フォロー、アンフォロー、ブロック
+- **Like集約**: いいね、いいね解除
+
+## 🗺️ コンテキストマップ
+
+```
+┌─────────────────┐     ┌─────────────────┐
+│   Identity      │────▶│   Social        │
+│   Context       │     │   Context       │
+│  (User管理)     │     │ (フォロー関係)   │
+└─────────────────┘     └─────────────────┘
+         │                       │
+         ▼                       ▼
+┌─────────────────┐     ┌─────────────────┐
+│   Content       │────▶│   Analytics     │
+│   Context       │     │   Context       │
+│  (投稿管理)     │     │  (分析・統計)    │
+└─────────────────┘     └─────────────────┘
+```
+
+### 文脈間の関係
+
+- **Shared Kernel**: 共通の値オブジェクト（UserId, PostId）
+- **Upstream/Downstream**: Identity → Social（ユーザー情報の提供）
+- **Anti-Corruption Layer**: 外部サービスとの境界
+
+## 🚀 完成版の機能確認
+
+### 実装済み機能
+
+- ✅ ユーザー登録・ログイン
+- ✅ 投稿の作成・編集・削除
+- ✅ いいね機能
+- ✅ フォロー/アンフォロー
+- ✅ タイムライン表示
+- ✅ 画像アップロード
+- ✅ リアルタイム更新
+
+### 動作確認手順
 
 ```bash
+# 1. 環境変数の設定
+cp .env.example .env.local
+# Firebaseの設定値を記入
+
+# 2. 依存関係のインストール
 pnpm install
-```
 
-### 4. Firebase設定
+# 3. エミュレーター起動
+pnpm emulators
 
-1. [Firebase Console](https://console.firebase.google.com/)でプロジェクトを作成
-2. 認証、Firestore、Storageを有効化
-3. `.env`ファイルを作成（`.env.example`を参考）
-4. Firebase設定値を記入
-
-詳細は`articles/firebase-setup-guide.md`を参照してください。
-
-### 5. 章の選択
-
-学習したい章のブランチに切り替えます：
-
-```bash
-# 例：第1章から始める場合
-git checkout chapter-1-domain-basics
-```
-
-## 📖 学習の進め方
-
-1. **記事を読む**：`articles/`フォルダ内の該当章の記事を読む
-2. **コードを確認**：現在のブランチのコードを確認
-3. **演習に取り組む**：TODOコメントの箇所を実装
-4. **次の章へ**：完成したら次の章のブランチへ
-
-### 演習の例
-
-各章にはTODOコメントが含まれています：
-
-```typescript
-// TODO: ここにPostエンティティを実装してください
-// ヒント：
-// - idは必須
-// - textとimageUrlのどちらかは必須
-// - 300文字制限
-```
-
-## 🛠️ 開発コマンド
-
-```bash
-# 開発サーバー起動
+# 4. 開発サーバー起動
 pnpm dev
 
+# 5. ブラウザで確認
+open http://localhost:5173
+```
+
+## 🏗️ デプロイメント
+
+### Firebase Hostingへのデプロイ
+
+```bash
 # ビルド
 pnpm build
 
-# テスト実行
-pnpm test
+# デプロイ
+firebase deploy
 
-# Firebase Emulator起動
-firebase emulators:start
+# 本番URLで確認
+open https://your-app.web.app
 ```
 
-## 🏗️ プロジェクト構造
+### CI/CD設定（GitHub Actions）
 
+`.github/workflows/deploy.yml`:
+```yaml
+name: Deploy to Firebase
+on:
+  push:
+    branches: [main]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2
+      - run: pnpm install
+      - run: pnpm build
+      - uses: FirebaseExtended/action-hosting-deploy@v0
 ```
-.
-├── packages/
-│   ├── domain/          # ドメイン層
-│   ├── application/     # アプリケーション層
-│   ├── infrastructure/  # インフラ層
-│   └── web/            # プレゼンテーション層（React）
-├── articles/           # 各章の記事
-├── firebase.json       # Firebase設定
-└── README.md          # このファイル
-```
 
-## 📚 参考資料
+## 📊 今後の拡張アイデア
 
-- [ドメイン駆動設計をはじめよう](https://www.amazon.co.jp/dp/479813161X)
-- [Firebase Documentation](https://firebase.google.com/docs)
-- [React Documentation](https://react.dev)
+### 機能拡張
 
-## 🤔 困ったときは
+1. **通知機能**
+   - Firebase Cloud Messaging
+   - プッシュ通知
 
-- 各章の記事の最後にある「よくある質問」を確認
-- GitHubのIssuesで質問
-- 完成版（`main`ブランチ）のコードを参考に
+2. **検索機能**
+   - Algolia連携
+   - 全文検索
 
-Happy Learning! 🎉
+3. **DM機能**
+   - 新しい境界づけられた文脈
+   - リアルタイムメッセージング
+
+### アーキテクチャ改善
+
+1. **CQRS実装**
+   - 読み書きの分離
+   - イベントソーシング
+
+2. **マイクロサービス化**
+   - 文脈ごとにサービス分割
+   - API Gateway
+
+## 💡 学んだことの振り返り
+
+### DDDの戦術的パターン
+
+- ✅ エンティティと値オブジェクト
+- ✅ 集約とトランザクション境界
+- ✅ リポジトリによる永続化の抽象化
+- ✅ アプリケーションサービス
+- ✅ ドメインサービス
+
+### DDDの戦略的設計
+
+- ✅ ユビキタス言語
+- ✅ 境界づけられた文脈
+- ✅ コンテキストマッピング
+- ✅ イベントストーミング
+
+## 🎯 完了チェックリスト
+
+- [ ] すべての機能が動作する
+- [ ] テストがすべて通る
+- [ ] Firebaseにデプロイできる
+- [ ] ドメインモデルが理解できる
+- [ ] 新機能を追加できる自信がある
+
+## 📚 さらなる学習のために
+
+### 推薦図書
+
+- 『ドメイン駆動設計』Eric Evans
+- 『実践ドメイン駆動設計』Vaughn Vernon
+- 『ドメイン駆動設計 モデリング/実装ガイド』松岡幸一郎
+
+### オンラインリソース
+
+- [DDD Community](https://www.dddcommunity.org/)
+- [Domain-Driven Design Europe](https://dddeurope.com/)
+- [Event Storming](https://www.eventstorming.com/)
+
+## 🙏 おわりに
+
+DDDの学習お疲れさまでした！
+
+このハンズオンで学んだパターンは、実際のプロジェクトで必ず役立ちます。
+完成版のコードを参考に、ぜひ自分のプロジェクトでDDDを実践してください。
+
+**Happy Domain-Driven Designing! 🚀**
+
+---
+
+## 📧 フィードバック
+
+質問や改善提案があれば、GitHubのIssuesまでお願いします。
+
+[GitHub Repository](https://github.com/your-username/ddd-firebase-sns)
