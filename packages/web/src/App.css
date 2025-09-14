@@ -1,0 +1,390 @@
+/* リセット */
+#root {
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* アプリケーション全体のスタイル */
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* ヘッダー */
+.app-header {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* 認証セクション */
+.auth-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-name {
+  font-weight: 500;
+  color: #333;
+}
+
+.sign-in-button,
+.sign-out-button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sign-in-button {
+  background: #4285f4;
+  color: white;
+}
+
+.sign-in-button:hover {
+  background: #357ae8;
+}
+
+.sign-out-button {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.sign-out-button:hover {
+  background: #e8e8e8;
+}
+
+/* メインコンテンツ */
+.app-main {
+  flex: 1;
+  padding: 2rem;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 2rem;
+}
+
+@media (max-width: 768px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ウェルカムメッセージ */
+.welcome-message {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 1rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.welcome-message h2 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.welcome-message p {
+  color: #666;
+  margin: 0.5rem 0;
+}
+
+/* 投稿フォーム */
+.create-post-form {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.create-post-form h3 {
+  margin: 0 0 1rem 0;
+  color: #333;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 0.5rem;
+  resize: vertical;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.char-count {
+  text-align: right;
+  font-size: 0.875rem;
+  color: #666;
+  margin-top: 0.25rem;
+}
+
+.form-group input[type="file"] {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.image-preview {
+  padding: 0.5rem;
+  background: #f5f5f5;
+  border-radius: 0.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.image-preview button {
+  padding: 0.25rem 0.5rem;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.error {
+  color: #ef4444;
+  margin: 0.5rem 0;
+  font-size: 0.875rem;
+}
+
+button[type="submit"] {
+  width: 100%;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+button[type="submit"]:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+button[type="submit"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* タイムライン */
+.timeline {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.timeline-header h2 {
+  margin: 0;
+  color: #333;
+}
+
+.refresh-button {
+  padding: 0.5rem 1rem;
+  background: #f5f5f5;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.refresh-button:hover {
+  background: #e8e8e8;
+}
+
+/* 投稿アイテム */
+.post-item {
+  padding: 1rem;
+  border-bottom: 1px solid #eee;
+}
+
+.post-item:last-child {
+  border-bottom: none;
+}
+
+.post-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.post-author {
+  font-weight: 500;
+  color: #667eea;
+}
+
+.post-time {
+  color: #999;
+}
+
+.post-content {
+  margin: 1rem 0;
+  color: #333;
+  line-height: 1.6;
+  text-align: left;
+}
+
+.post-content p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.post-image {
+  margin: 1rem 0;
+}
+
+.post-image img {
+  max-width: 100%;
+  border-radius: 0.5rem;
+}
+
+.post-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.like-button {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.75rem;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.like-button:hover:not(:disabled) {
+  background: #fef2f2;
+  border-color: #ef4444;
+}
+
+.like-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.like-button.liking {
+  animation: pulse 0.3s ease-in-out;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.like-icon {
+  color: #ef4444;
+}
+
+.like-count {
+  font-size: 0.875rem;
+  color: #666;
+}
+
+/* フッター */
+.app-footer {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 1rem;
+  text-align: center;
+  color: #666;
+  font-size: 0.875rem;
+}
+
+/* ローディング */
+.app-loading,
+.timeline-loading {
+  text-align: center;
+  padding: 2rem;
+  color: white;
+}
+
+/* エラー */
+.timeline-error {
+  text-align: center;
+  padding: 2rem;
+  background: white;
+  border-radius: 0.5rem;
+}
+
+.timeline-error button {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+/* ログイン要求 */
+.timeline-login-required {
+  text-align: center;
+  padding: 2rem;
+  background: white;
+  border-radius: 0.5rem;
+  color: #666;
+}
+
+/* 投稿リスト空 */
+.post-list-empty {
+  text-align: center;
+  padding: 2rem;
+  color: #999;
+}
