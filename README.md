@@ -1,121 +1,133 @@
-# DDD × Firebase × React SNS ハンズオン
+# 🎓 DDD × Firebase SNS ハンズオン - 第0章：初期セットアップ
 
-ドメイン駆動設計（DDD）を学びながら、実際に動くSNSアプリケーションを作るハンズオン教材です。
+## 📚 この章で学ぶこと
 
-## 📚 章構成とブランチ
+- プロジェクトの構成を理解する
+- Firebaseの基本設定を行う
+- 開発環境を構築する
 
-各章ごとにブランチが用意されており、段階的に学習できます：
+## 🎯 学習目標
 
-| 章 | ブランチ名 | 内容 |
-|---|-----------|------|
-| 0 | `chapter-0-setup` | 初期セットアップ |
-| 1 | `chapter-1-domain-basics` | ドメインモデルの基礎 |
-| 2 | `chapter-2-entities-vo` | エンティティと値オブジェクト |
-| 3 | `chapter-3-aggregates` | 集約パターン |
-| 4 | `chapter-4-repository` | リポジトリパターン |
-| 5 | `chapter-5-application-service` | アプリケーションサービス |
-| 6 | `chapter-6-strategic-design` | 戦略的設計（完成版） |
+1. **モノレポ構成の理解**
+   - pnpm workspaceの仕組み
+   - レイヤーごとのパッケージ分離
 
-## 🚀 はじめ方
+2. **Firebase環境の準備**
+   - プロジェクトの作成
+   - 認証・Firestore・Storageの有効化
 
-### 1. 環境準備
+3. **開発環境の立ち上げ**
+   - エミュレーターの起動
+   - フロントエンドの起動
 
-必要なもの：
-- Node.js 18以上
-- pnpm
-- Firebaseアカウント
-- Git
+## 📂 プロジェクト構造
 
-### 2. プロジェクトのクローン
-
-```bash
-git clone [repository-url]
-cd ddd-firebase-sns
+```
+zenn-repo/
+├── packages/
+│   ├── domain/        # ドメイン層（まだ空）
+│   ├── application/   # アプリケーション層（まだ空）
+│   ├── infrastructure/# インフラ層（まだ空）
+│   └── web/          # プレゼンテーション層（基本構成のみ）
+├── firebase.json      # Firebase設定
+├── firestore.rules   # セキュリティルール
+└── pnpm-workspace.yaml
 ```
 
-### 3. 依存関係のインストール
+## 🚀 セットアップ手順
+
+### 1. 依存関係のインストール
 
 ```bash
 pnpm install
 ```
 
-### 4. Firebase設定
+### 2. Firebaseプロジェクトの作成
 
-1. [Firebase Console](https://console.firebase.google.com/)でプロジェクトを作成
-2. 認証、Firestore、Storageを有効化
-3. `.env`ファイルを作成（`.env.example`を参考）
-4. Firebase設定値を記入
+1. [Firebase Console](https://console.firebase.google.com/)にアクセス
+2. 新しいプロジェクトを作成
+3. 以下の機能を有効化：
+   - Authentication（メール/パスワード認証）
+   - Firestore Database
+   - Storage
 
-詳細は`articles/firebase-setup-guide.md`を参照してください。
+### 3. Firebase設定ファイルの作成
 
-### 5. 章の選択
+`packages/web/.env.local`を作成：
 
-学習したい章のブランチに切り替えます：
+```env
+VITE_FIREBASE_API_KEY=your-api-key
+VITE_FIREBASE_AUTH_DOMAIN=your-auth-domain
+VITE_FIREBASE_PROJECT_ID=your-project-id
+VITE_FIREBASE_STORAGE_BUCKET=your-storage-bucket
+VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+VITE_FIREBASE_APP_ID=your-app-id
+```
+
+### 4. エミュレーターの起動
 
 ```bash
-# 例：第1章から始める場合
+# 別ターミナルで実行
+pnpm emulators
+```
+
+### 5. 開発サーバーの起動
+
+```bash
+pnpm dev
+```
+
+## ✅ 確認ポイント
+
+- [ ] `http://localhost:5173`でアプリが表示される
+- [ ] `http://localhost:4000`でEmulator UIが表示される
+- [ ] コンソールにエラーが出ていない
+
+## 📝 演習課題
+
+### 課題1：プロジェクト構造の理解
+
+各パッケージのroleを説明してください：
+- `domain/`: ?
+- `application/`: ?
+- `infrastructure/`: ?
+- `web/`: ?
+
+### 課題2：レイヤードアーキテクチャ
+
+なぜパッケージを分離するのか、その利点を3つ挙げてください。
+
+## 🎯 次の章へ
+
+セットアップが完了したら、第1章へ進みましょう！
+
+```bash
 git checkout chapter-1-domain-basics
 ```
 
-## 📖 学習の進め方
+第1章では、ドメイン駆動設計の基本概念を学びながら、最初のドメインモデルを実装します。
 
-1. **記事を読む**：`articles/`フォルダ内の該当章の記事を読む
-2. **コードを確認**：現在のブランチのコードを確認
-3. **演習に取り組む**：TODOコメントの箇所を実装
-4. **次の章へ**：完成したら次の章のブランチへ
+## 🆘 トラブルシューティング
 
-### 演習の例
-
-各章にはTODOコメントが含まれています：
-
-```typescript
-// TODO: ここにPostエンティティを実装してください
-// ヒント：
-// - idは必須
-// - textとimageUrlのどちらかは必須
-// - 300文字制限
-```
-
-## 🛠️ 開発コマンド
+### エミュレーターが起動しない
 
 ```bash
-# 開発サーバー起動
-pnpm dev
+# Java 11以上が必要
+java -version
 
-# ビルド
-pnpm build
-
-# テスト実行
-pnpm test
-
-# Firebase Emulator起動
-firebase emulators:start
+# Firebase CLIの更新
+npm install -g firebase-tools
 ```
 
-## 🏗️ プロジェクト構造
+### TypeScriptエラーが出る
 
-```
-.
-├── packages/
-│   ├── domain/          # ドメイン層
-│   ├── application/     # アプリケーション層
-│   ├── infrastructure/  # インフラ層
-│   └── web/            # プレゼンテーション層（React）
-├── articles/           # 各章の記事
-├── firebase.json       # Firebase設定
-└── README.md          # このファイル
+```bash
+# 型定義の再生成
+pnpm typecheck
 ```
 
 ## 📚 参考資料
 
-- [ドメイン駆動設計をはじめよう](https://www.amazon.co.jp/dp/479813161X)
 - [Firebase Documentation](https://firebase.google.com/docs)
-- [React Documentation](https://react.dev)
-
-## 🤔 困ったときは
-
-- 各章の記事の最後にある「よくある質問」を確認
-- GitHubのIssuesで質問
-- 完成版（`main`ブランチ）のコードを参考に
-
-Happy Learning! 🎉
+- [pnpm Workspace](https://pnpm.io/workspaces)
+- [Vite Guide](https://vitejs.dev/guide/)
