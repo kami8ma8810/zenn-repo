@@ -1,121 +1,199 @@
-# DDD × Firebase × React SNS ハンズオン
+# 🎓 DDD × Firebase SNS ハンズオン - 第3章：集約パターン
 
-ドメイン駆動設計（DDD）を学びながら、実際に動くSNSアプリケーションを作るハンズオン教材です。
+## 📚 この章で学ぶこと
 
-## 📚 章構成とブランチ
+- 集約の本質（トランザクション境界）
+- 集約ルートの設計
+- 不変条件の実装
 
-各章ごとにブランチが用意されており、段階的に学習できます：
+## 🎯 学習目標
 
-| 章 | ブランチ名 | 内容 |
-|---|-----------|------|
-| 0 | `chapter-0-setup` | 初期セットアップ |
-| 1 | `chapter-1-domain-basics` | ドメインモデルの基礎 |
-| 2 | `chapter-2-entities-vo` | エンティティと値オブジェクト |
-| 3 | `chapter-3-aggregates` | 集約パターン |
-| 4 | `chapter-4-repository` | リポジトリパターン |
-| 5 | `chapter-5-application-service` | アプリケーションサービス |
-| 6 | `chapter-6-strategic-design` | 戦略的設計（完成版） |
+1. **集約の理解**
+   - 一貫性境界の定義
+   - トランザクション整合性
+   - 集約ルートの責務
 
-## 🚀 はじめ方
+2. **設計原則の実践**
+   - 小さな集約
+   - IDによる参照
+   - 結果整合性
 
-### 1. 環境準備
+3. **不変条件の実装**
+   - ビジネスルールの保護
+   - 状態遷移の制御
 
-必要なもの：
-- Node.js 18以上
-- pnpm
-- Firebaseアカウント
-- Git
+## 📂 この章のコード構造
 
-### 2. プロジェクトのクローン
-
-```bash
-git clone [repository-url]
-cd ddd-firebase-sns
+```
+packages/domain/src/
+├── post/
+│   ├── Post.ts              # 集約ルート
+│   ├── PostMetrics.ts       # TODO: 値オブジェクト
+│   └── PostAggregate.ts     # TODO: 集約全体
+├── followRelation/
+│   └── FollowRelation.ts    # TODO: 別の集約
+└── like/
+    └── Like.ts              # TODO: 独立した集約
 ```
 
-### 3. 依存関係のインストール
+## 📝 演習課題
 
-```bash
-pnpm install
-```
+### 課題1：Post集約の境界設計
 
-### 4. Firebase設定
-
-1. [Firebase Console](https://console.firebase.google.com/)でプロジェクトを作成
-2. 認証、Firestore、Storageを有効化
-3. `.env`ファイルを作成（`.env.example`を参考）
-4. Firebase設定値を記入
-
-詳細は`articles/firebase-setup-guide.md`を参照してください。
-
-### 5. 章の選択
-
-学習したい章のブランチに切り替えます：
-
-```bash
-# 例：第1章から始める場合
-git checkout chapter-1-domain-basics
-```
-
-## 📖 学習の進め方
-
-1. **記事を読む**：`articles/`フォルダ内の該当章の記事を読む
-2. **コードを確認**：現在のブランチのコードを確認
-3. **演習に取り組む**：TODOコメントの箇所を実装
-4. **次の章へ**：完成したら次の章のブランチへ
-
-### 演習の例
-
-各章にはTODOコメントが含まれています：
+以下の要素を集約内に含めるべきか判断してください：
 
 ```typescript
-// TODO: ここにPostエンティティを実装してください
-// ヒント：
-// - idは必須
-// - textとimageUrlのどちらかは必須
-// - 300文字制限
+// Post集約に含める？含めない？
+- Post本体         → ?
+- コメント         → ?
+- いいね          → ?
+- 投稿者情報      → ?
+- 閲覧数          → ?
 ```
 
-## 🛠️ 開発コマンド
+判断基準：
+- 一緒に作成/削除される？
+- 同時に更新が必要？
+- 独立して存在できる？
+
+### 課題2：不変条件の実装
+
+`Post.ts`に以下の不変条件を実装してください：
+
+```typescript
+// TODO: 以下の不変条件を守る
+// 1. 作者のみ編集可能
+// 2. アーカイブ済みは編集不可
+// 3. 公開範囲の制御
+```
+
+実装例：
+```typescript
+edit(editorId: UserId, newContent: PostContent): void {
+  // 不変条件のチェック
+  if (!this.authorId.equals(editorId)) {
+    throw new UnauthorizedError();
+  }
+  // 更新処理
+}
+```
+
+### 課題3：集約間の連携設計
+
+いいね機能を実装する際の集約設計：
+
+```typescript
+// 案1：Post集約に含める
+class Post {
+  private likes: Like[];
+  
+  addLike(userId: UserId): void {
+    // 集約内で完結
+  }
+}
+
+// 案2：独立した集約にする
+class Like {
+  constructor(
+    private postId: PostId,
+    private userId: UserId
+  ) {}
+}
+
+// どちらが適切？その理由は？
+```
+
+## 🏗️ 実装課題
+
+### FollowRelation集約の実装
+
+```typescript
+// TODO: FollowRelation集約を実装
+// 要件：
+// - フォロー/アンフォロー
+// - ブロック機能
+// - 相互フォロー判定
+// - 自己フォロー禁止
+```
+
+考慮点：
+- フォロワー数のカウントは集約内？外？
+- 通知はどこで発行？
+- ブロック状態の管理
+
+### PostMetrics値オブジェクトの実装
+
+```typescript
+// TODO: PostMetrics値オブジェクトを実装
+// 要件：
+// - いいね数、コメント数、シェア数
+// - エンゲージメント率の計算
+// - バズ判定ロジック
+```
+
+## 💡 設計のヒント
+
+### 集約設計のチェックリスト
+
+**小さく保つために：**
+- [ ] 本当に強い整合性が必要か？
+- [ ] 結果整合性で十分では？
+- [ ] パフォーマンスの問題はない？
+
+**境界を見つけるために：**
+- [ ] ユースケースを列挙した？
+- [ ] 並行編集のシナリオは？
+- [ ] トランザクションの範囲は？
+
+### よくあるアンチパターン
+
+❌ 巨大な集約
+```typescript
+class User {
+  posts: Post[];        // 全投稿
+  followers: User[];    // 全フォロワー
+  likes: Like[];       // 全いいね
+  // メモリに載らない！
+}
+```
+
+✅ 適切なサイズの集約
+```typescript
+class User {
+  profile: UserProfile;
+  // 他は別集約として参照
+}
+```
+
+## 🧪 動作確認
 
 ```bash
-# 開発サーバー起動
-pnpm dev
+# 集約の整合性テスト
+pnpm test:domain
 
-# ビルド
-pnpm build
-
-# テスト実行
-pnpm test
-
-# Firebase Emulator起動
-firebase emulators:start
+# 境界のテスト
+pnpm test:integration
 ```
 
-## 🏗️ プロジェクト構造
+## 🎯 完成の確認
 
+- [ ] Post集約が適切なサイズ
+- [ ] 不変条件が実装されている
+- [ ] 集約間はIDで参照
+- [ ] トランザクション境界が明確
+- [ ] ドメインイベントの準備
+
+## 🚀 次の章へ
+
+```bash
+git add .
+git commit -m "完了: 第3章 - 集約パターン"
+git checkout chapter-4-repository
 ```
-.
-├── packages/
-│   ├── domain/          # ドメイン層
-│   ├── application/     # アプリケーション層
-│   ├── infrastructure/  # インフラ層
-│   └── web/            # プレゼンテーション層（React）
-├── articles/           # 各章の記事
-├── firebase.json       # Firebase設定
-└── README.md          # このファイル
-```
 
-## 📚 参考資料
+第4章では、リポジトリパターンで永続化を抽象化します。
 
-- [ドメイン駆動設計をはじめよう](https://www.amazon.co.jp/dp/479813161X)
-- [Firebase Documentation](https://firebase.google.com/docs)
-- [React Documentation](https://react.dev)
+## 🔗 参考リンク
 
-## 🤔 困ったときは
-
-- 各章の記事の最後にある「よくある質問」を確認
-- GitHubのIssuesで質問
-- 完成版（`main`ブランチ）のコードを参考に
-
-Happy Learning! 🎉
+- [第3回記事：集約 - トランザクション整合性の守護者](../articles/ddd-firebase-sns-part3-revised.md)
+- [Effective Aggregate Design](https://www.dddcommunity.org/library/vernon_2011/)
