@@ -1,164 +1,121 @@
-# 🌟 SNS DDD × Firebase - 小さなSNSを作りながら学ぶDDD
+# DDD × Firebase × React SNS ハンズオン
 
-DDDの設計原則とFirebaseを組み合わせた、実践的なハンズオンプロジェクトです。
+ドメイン駆動設計（DDD）を学びながら、実際に動くSNSアプリケーションを作るハンズオン教材です。
 
-## 📚 概要
+## 📚 章構成とブランチ
 
-このプロジェクトは、ドメイン駆動設計（DDD）の原則に従って設計された小規模なSNSアプリケーションです。バックエンドインフラはFirebase（Auth/Firestore/Storage/Hosting）で完結させ、フロントエンドはReact + Viteで構築しています。
+各章ごとにブランチが用意されており、段階的に学習できます：
 
-## 🏗️ アーキテクチャ
+| 章 | ブランチ名 | 内容 |
+|---|-----------|------|
+| 0 | `chapter-0-setup` | 初期セットアップ |
+| 1 | `chapter-1-domain-basics` | ドメインモデルの基礎 |
+| 2 | `chapter-2-entities-vo` | エンティティと値オブジェクト |
+| 3 | `chapter-3-aggregates` | 集約パターン |
+| 4 | `chapter-4-repository` | リポジトリパターン |
+| 5 | `chapter-5-application-service` | アプリケーションサービス |
+| 6 | `chapter-6-strategic-design` | 戦略的設計（完成版） |
 
-```
-sns-ddd-firebase/
-├─ packages/
-│  ├─ domain/                 # 純粋なTypeScript: Entity/ValueObject/Aggregate
-│  ├─ application/            # UseCase (サービス) + ポート（Repository IF）
-│  ├─ infrastructure/         # Firebase実装（Firestore/Storage/Auth）+ mappers
-│  └─ web/                    # React(Vite) UI（presentation層）
-├─ firebase.json              # Hosting / Emulators設定
-├─ firestore.rules            # Firestoreセキュリティルール
-└─ storage.rules              # Storageセキュリティルール
-```
+## 🚀 はじめ方
 
-### レイヤー構成
+### 1. 環境準備
 
-- **ドメイン層（domain）**: ビジネスロジックと不変条件を管理。Firebaseに依存しない純粋なTypeScript
-- **アプリケーション層（application）**: ユースケースとポート定義。複数のリポジトリを協調
-- **インフラ層（infrastructure）**: Firebase SDKの実装。DTO ⇔ ドメインモデルの変換
-- **プレゼンテーション層（web）**: React UIコンポーネント
-
-## 🚀 機能
-
-- ✅ Googleアカウントでのサインイン
-- ✅ テキスト + 画像投稿
-- ✅ タイムライン表示
-- ✅ いいね機能
-- ✅ フォロー/アンフォロー
-- ✅ プロフィール管理
-
-## 🛠️ セットアップ
-
-### 必要環境
-
+必要なもの：
 - Node.js 18以上
-- pnpm 8以上
-- Firebase CLIツール
+- pnpm
+- Firebaseアカウント
+- Git
 
-### インストール
+### 2. プロジェクトのクローン
 
 ```bash
-# 依存関係のインストール
+git clone [repository-url]
+cd ddd-firebase-sns
+```
+
+### 3. 依存関係のインストール
+
+```bash
 pnpm install
-
-# Firebase CLIのインストール（未インストールの場合）
-npm install -g firebase-tools
 ```
 
-### 環境変数の設定
+### 4. Firebase設定
 
-`packages/web/.env`ファイルを作成し、Firebase設定を追加：
+1. [Firebase Console](https://console.firebase.google.com/)でプロジェクトを作成
+2. 認証、Firestore、Storageを有効化
+3. `.env`ファイルを作成（`.env.example`を参考）
+4. Firebase設定値を記入
 
-```env
-VITE_FIREBASE_API_KEY=your-api-key
-VITE_FIREBASE_AUTH_DOMAIN=your-auth-domain
-VITE_FIREBASE_PROJECT_ID=your-project-id
-VITE_FIREBASE_STORAGE_BUCKET=your-storage-bucket
-VITE_FIREBASE_MESSAGING_SENDER_ID=your-messaging-sender-id
-VITE_FIREBASE_APP_ID=your-app-id
-VITE_USE_EMULATOR=true
-```
+詳細は`articles/firebase-setup-guide.md`を参照してください。
 
-## 🏃 実行方法
+### 5. 章の選択
 
-### 開発環境
+学習したい章のブランチに切り替えます：
 
 ```bash
-# Firebase Emulatorを起動
-pnpm emulator
-
-# 別ターミナルで開発サーバーを起動
-pnpm dev
+# 例：第1章から始める場合
+git checkout chapter-1-domain-basics
 ```
 
-アプリケーションは http://localhost:3000 で起動します。
-Firebase Emulator UIは http://localhost:4000 で確認できます。
+## 📖 学習の進め方
 
-### ビルド
+1. **記事を読む**：`articles/`フォルダ内の該当章の記事を読む
+2. **コードを確認**：現在のブランチのコードを確認
+3. **演習に取り組む**：TODOコメントの箇所を実装
+4. **次の章へ**：完成したら次の章のブランチへ
 
-```bash
-# 全パッケージをビルド
-pnpm build
-```
+### 演習の例
 
-### テスト
-
-```bash
-# 全パッケージのテストを実行
-pnpm test
-```
-
-## 📝 DDD設計のポイント
-
-### 集約の境界
-
-- **User集約**: プロフィール編集の不変条件を管理
-- **Post集約**: 投稿の作成/編集、いいね数の管理
-- **FollowRelation集約**: フォロー関係の管理（重複防止、自己フォロー禁止）
-
-### 不変条件の例
+各章にはTODOコメントが含まれています：
 
 ```typescript
-// Post集約の不変条件
-- 投稿には本文または画像のどちらかが必須
-- 本文は300文字以内
-- 編集は作成者のみ可能
-- いいね数は0未満にならない
+// TODO: ここにPostエンティティを実装してください
+// ヒント：
+// - idは必須
+// - textとimageUrlのどちらかは必須
+// - 300文字制限
 ```
 
-## 🔥 Firebase設計
+## 🛠️ 開発コマンド
 
-### Firestoreデータモデル
+```bash
+# 開発サーバー起動
+pnpm dev
+
+# ビルド
+pnpm build
+
+# テスト実行
+pnpm test
+
+# Firebase Emulator起動
+firebase emulators:start
+```
+
+## 🏗️ プロジェクト構造
 
 ```
-/users/{userId}                    # ユーザー情報
-/posts/{postId}                    # 投稿
-/follows/{userId}/to/{followeeId}  # フォロー関係
-/likes/{postId}/by/{userId}        # いいね
+.
+├── packages/
+│   ├── domain/          # ドメイン層
+│   ├── application/     # アプリケーション層
+│   ├── infrastructure/  # インフラ層
+│   └── web/            # プレゼンテーション層（React）
+├── articles/           # 各章の記事
+├── firebase.json       # Firebase設定
+└── README.md          # このファイル
 ```
 
-### セキュリティルール
+## 📚 参考資料
 
-- 認証ユーザーのみ投稿・いいね・フォローが可能
-- 自分の投稿のみ編集・削除可能
-- プロフィールは本人のみ編集可能
+- [ドメイン駆動設計をはじめよう](https://www.amazon.co.jp/dp/479813161X)
+- [Firebase Documentation](https://firebase.google.com/docs)
+- [React Documentation](https://react.dev)
 
-## 📚 学習リソース
+## 🤔 困ったときは
 
-この実装を通じて学べること：
+- 各章の記事の最後にある「よくある質問」を確認
+- GitHubのIssuesで質問
+- 完成版（`main`ブランチ）のコードを参考に
 
-1. **DDDの基本概念**
-   - エンティティとバリューオブジェクト
-   - 集約とリポジトリパターン
-   - ユースケース層の設計
-
-2. **クリーンアーキテクチャ**
-   - レイヤー間の依存関係
-   - ポートとアダプタパターン
-   - テスタビリティの向上
-
-3. **Firebase実践**
-   - Firestoreのデータモデリング
-   - セキュリティルールの設計
-   - エミュレータを使った開発
-
-## 🤝 コントリビューション
-
-Issue や Pull Request は歓迎です！
-
-## 📄 ライセンス
-
-MIT
-
----
-
-Built with 💜 using DDD principles and Firebase
+Happy Learning! 🎉
