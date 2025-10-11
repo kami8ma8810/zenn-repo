@@ -50,3 +50,6 @@ coverage/
 
 # Claude
 .claude/
+
+#Ignore cursor AI rules
+.cursor/rules/codacy.mdc
