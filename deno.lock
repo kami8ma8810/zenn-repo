@@ -203,8 +203,7 @@
   "workspace": {
     "packageJson": {
       "dependencies": [
-        "npm:@types/node@^20.11.0",
-        "npm:typescript@^5.3.3"
+        "npm:zenn-cli@~0.2.9"
       ]
     }
   }

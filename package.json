@@ -1,23 +1,24 @@
 {
-  "name": "sns-ddd-firebase",
+  "name": "zenn-repo",
   "version": "1.0.0",
-  "private": true,
-  "description": "小さなSNSを作りながら学ぶDDD - All Firebaseで実装",
+  "description": "",
+  "main": "index.js",
   "scripts": {
-    "dev": "pnpm -C packages/web dev",
-    "build": "pnpm -r build",
-    "test": "pnpm -r test",
-    "typecheck": "pnpm -r typecheck",
-    "lint": "pnpm -r lint",
-    "emulator": "firebase emulators:start",
-    "deploy": "pnpm build && firebase deploy"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "devDependencies": {
-    "@types/node": "^20.11.0",
-    "typescript": "^5.3.3"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kami8ma8810/zenn-repo.git"
   },
-  "engines": {
-    "node": ">=18.0.0",
-    "pnpm": ">=8.0.0"
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/kami8ma8810/zenn-repo/issues"
+  },
+  "homepage": "https://github.com/kami8ma8810/zenn-repo#readme",
+  "dependencies": {
+    "zenn-cli": "^0.2.9"
   }
 }

@@ -53,3 +53,5 @@ coverage/
 
 #Ignore cursor AI rules
 .cursor/rules/codacy.mdc
+node_modules
+.DS_Store
