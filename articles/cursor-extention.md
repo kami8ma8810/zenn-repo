@@ -1,6 +1,6 @@
 ---
-title: "CursorがあればVSCode拡張機能が不要になっていく"
-emoji: "🍣"
+title: "Cursorデフォルト機能のおかげでVSCode拡張を断捨離"
+emoji: "🗑️"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ['VSCode','Cursor','拡張機能','環境構築']
 published: false
