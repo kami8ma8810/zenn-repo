@@ -520,10 +520,11 @@
     });
 
     // ドラッグ範囲の制限を計算する関数
-    function clampTranslate(x, y) {
+    // scale: 使用する scale（デフォルトは state.scale）
+    function clampTranslate(x, y, scale = state.scale) {
       // スケール後の画像サイズ
-      const scaledWidth = IMAGE_WIDTH * state.scale;
-      const scaledHeight = IMAGE_HEIGHT * state.scale;
+      const scaledWidth = IMAGE_WIDTH * scale;
+      const scaledHeight = IMAGE_HEIGHT * scale;
 
       // Container サイズ
       const containerWidth = cropAreaState.width;
@@ -531,15 +532,15 @@
 
       // transform-origin: 50% 50% の場合の画像左上の位置
       // 画像左上 = (IMAGE_WIDTH/2 * (1 - scale), IMAGE_HEIGHT/2 * (1 - scale)) + translate
-      const imageLeft = IMAGE_WIDTH / 2 * (1 - state.scale) + INITIAL_TRANSLATE_X + x;
-      const imageTop = IMAGE_HEIGHT / 2 * (1 - state.scale) + INITIAL_TRANSLATE_Y + y;
+      const imageLeft = IMAGE_WIDTH / 2 * (1 - scale) + INITIAL_TRANSLATE_X + x;
+      const imageTop = IMAGE_HEIGHT / 2 * (1 - scale) + INITIAL_TRANSLATE_Y + y;
 
       // 制限条件：画像がクロップ領域を完全にカバーする
       // total translate の最大値・最小値
-      const maxTotalTx = -IMAGE_WIDTH / 2 * (1 - state.scale);
-      const minTotalTx = containerWidth - IMAGE_WIDTH / 2 * (1 + state.scale);
-      const maxTotalTy = -IMAGE_HEIGHT / 2 * (1 - state.scale);
-      const minTotalTy = containerHeight - IMAGE_HEIGHT / 2 * (1 + state.scale);
+      const maxTotalTx = -IMAGE_WIDTH / 2 * (1 - scale);
+      const minTotalTx = containerWidth - IMAGE_WIDTH / 2 * (1 + scale);
+      const maxTotalTy = -IMAGE_HEIGHT / 2 * (1 - scale);
+      const minTotalTy = containerHeight - IMAGE_HEIGHT / 2 * (1 + scale);
 
       // state.x/y の制限
       const minX = minTotalTx - INITIAL_TRANSLATE_X;
@@ -605,43 +606,78 @@
 
       // ⭐ 画像の現在位置に応じてズームの基準点を動的に調整
       //
-      // 目標: クロップ領域が見ている画像上の位置（natural座標系）を固定したまま、ズームする
+      // 目標: 画像が端にいる場合、そのエッジを円の端に固定したままズームする
       //
-      // transform-origin が 50% 50% (imageCenterX, imageCenterY) の場合の計算：
-      // 画像上の点 (imageX, imageY) が container座標系で表示される位置は：
-      // displayX = (imageX - imageCenterX) * scale + translateX + imageCenterX
-      // displayY = (imageY - imageCenterY) * scale + translateY + imageCenterY
-      //
-      // クロップ領域の中心 (containerCenterX, containerCenterY) が
-      // 画像上の (imageX, imageY) を見ているとき：
-      // containerCenterY = (imageY - imageCenterY) * scale + translateY + imageCenterY
-      //
-      // これを imageY について解くと：
-      // imageY = (containerCenterY - imageCenterY - translateY) / scale + imageCenterY
+      // エッジアンカリングの計算:
+      // - 左端固定: 画像の左端座標を一定に保つ
+      // - 右端固定: 画像の右端座標を一定に保つ
+      // - 上端固定: 画像の上端座標を一定に保つ
+      // - 下端固定: 画像の下端座標を一定に保つ
 
       // 現在の total translate（INITIAL_TRANSLATE + state）を取得
       const currentTotalTranslateX = INITIAL_TRANSLATE_X + state.x;
       const currentTotalTranslateY = INITIAL_TRANSLATE_Y + state.y;
 
-      // 現在クロップ領域が見ている画像上の位置（natural座標系）
-      const currentImageX = (containerCenterX - imageCenterX - currentTotalTranslateX) / state.scale + imageCenterX;
-      const currentImageY = (containerCenterY - imageCenterY - currentTotalTranslateY) / state.scale + imageCenterY;
+      // 現在の state が境界にいるかを判定するため、境界値を計算
+      const maxTotalTx = -IMAGE_WIDTH / 2 * (1 - state.scale);
+      const minTotalTx = cropAreaState.width - IMAGE_WIDTH / 2 * (1 + state.scale);
+      const maxTotalTy = -IMAGE_HEIGHT / 2 * (1 - state.scale);
+      const minTotalTy = cropAreaState.height - IMAGE_HEIGHT / 2 * (1 + state.scale);
 
-      // ズーム後も同じ画像上の位置を見るように translate を計算
-      // containerCenterY = (imageY - imageCenterY) * newScale + newTotalTranslateY + imageCenterY
-      // newTotalTranslateY = containerCenterY - imageCenterY - (imageY - imageCenterY) * newScale
-      const newTotalTranslateX = containerCenterX - imageCenterX - (currentImageX - imageCenterX) * newScale;
-      const newTotalTranslateY = containerCenterY - imageCenterY - (currentImageY - imageCenterY) * newScale;
+      const minX = minTotalTx - INITIAL_TRANSLATE_X;
+      const maxX = maxTotalTx - INITIAL_TRANSLATE_X;
+      const minY = minTotalTy - INITIAL_TRANSLATE_Y;
+      const maxY = maxTotalTy - INITIAL_TRANSLATE_Y;
+
+      const EPSILON = 0.1; // 誤差許容範囲
+      const atLeftEdge = Math.abs(state.x - maxX) < EPSILON;
+      const atRightEdge = Math.abs(state.x - minX) < EPSILON;
+      const atTopEdge = Math.abs(state.y - maxY) < EPSILON;
+      const atBottomEdge = Math.abs(state.y - minY) < EPSILON;
+
+      // 画像の向きを判定（長辺方向のみエッジ固定、短辺方向は中央固定）
+      const isVertical = IMAGE_HEIGHT > IMAGE_WIDTH; // 縦長画像
+      const isHorizontal = IMAGE_WIDTH > IMAGE_HEIGHT; // 横長画像
+
+      // エッジアンカリング計算
+      let newTotalTranslateX, newTotalTranslateY;
+
+      // X方向: 横長画像の場合のみエッジ固定、縦長画像では常に中央固定
+      if (isHorizontal && atLeftEdge) {
+        // 左端固定: 画像の左端座標 = imageCenterX + totalTranslateX - IMAGE_WIDTH/2 * scale を一定に保つ
+        newTotalTranslateX = currentTotalTranslateX + IMAGE_WIDTH / 2 * (newScale - state.scale);
+      } else if (isHorizontal && atRightEdge) {
+        // 右端固定: 画像の右端座標 = imageCenterX + totalTranslateX + IMAGE_WIDTH/2 * scale を一定に保つ
+        newTotalTranslateX = currentTotalTranslateX + IMAGE_WIDTH / 2 * (state.scale - newScale);
+      } else {
+        // 中央固定: クロップ中心が見ている画像上のX座標を固定
+        const currentImageX = (containerCenterX - imageCenterX - currentTotalTranslateX) / state.scale + imageCenterX;
+        newTotalTranslateX = containerCenterX - imageCenterX - (currentImageX - imageCenterX) * newScale;
+      }
+
+      // Y方向: 縦長画像の場合のみエッジ固定、横長画像では常に中央固定
+      if (isVertical && atTopEdge) {
+        // 上端固定: 画像の上端座標 = imageCenterY + totalTranslateY - IMAGE_HEIGHT/2 * scale を一定に保つ
+        newTotalTranslateY = currentTotalTranslateY + IMAGE_HEIGHT / 2 * (newScale - state.scale);
+      } else if (isVertical && atBottomEdge) {
+        // 下端固定: 画像の下端座標 = imageCenterY + totalTranslateY + IMAGE_HEIGHT/2 * scale を一定に保つ
+        newTotalTranslateY = currentTotalTranslateY + IMAGE_HEIGHT / 2 * (state.scale - newScale);
+      } else {
+        // 中央固定: クロップ中心が見ている画像上のY座標を固定
+        const currentImageY = (containerCenterY - imageCenterY - currentTotalTranslateY) / state.scale + imageCenterY;
+        newTotalTranslateY = containerCenterY - imageCenterY - (currentImageY - imageCenterY) * newScale;
+      }
 
       // state に戻す（INITIAL_TRANSLATE を引く）
       const newX = newTotalTranslateX - INITIAL_TRANSLATE_X;
       const newY = newTotalTranslateY - INITIAL_TRANSLATE_Y;
-      state.scale = newScale;
 
-      // ズーム後のドラッグ範囲を制限
-      const clamped = clampTranslate(newX, newY);
+      // ⭐ 重要: ズーム後のドラッグ範囲を制限（newScale を渡す）
+      // state.scale を更新する前に、newScale を使って制限を計算する
+      const clamped = clampTranslate(newX, newY, newScale);
       state.x = clamped.x;
       state.y = clamped.y;
+      state.scale = newScale;
 
       // マウスホイールは常にリアルタイムプレビュー
       applyTransform(true);
