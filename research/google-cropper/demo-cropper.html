@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google式クロッパー デモ</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    .info {
+      margin-bottom: 20px;
+      color: #666;
+      font-size: 14px;
+      text-align: center;
+    }
+
+    .controls {
+      margin-bottom: 20px;
+      display: flex;
+      gap: 10px;
+    }
+
+    button {
+      padding: 10px 20px;
+      background: #1a73e8;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #1557b0;
+    }
+
+    button:active {
+      background: #0d47a1;
+    }
+
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    /* デバッグモード専用ボタン */
+    .debug-only {
+      display: none;
+    }
+
+    body.debug-mode .debug-only {
+      display: inline-block;
+    }
+
+    /* ローディングオーバーレイ */
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    .loading-overlay.active {
+      display: flex;
+    }
+
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .cropper-container {
+      position: relative;
+      width: 840px;
+      height: 840px;
+      background: #000;
+      overflow: hidden;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    /* 画像コンテナ（回転用） - クロップ領域と同じサイズの正方形 */
+    .image-container {
+      position: absolute;
+      /* left/top は JavaScript で設定（クロップ領域と同じ位置） */
+      width: 632px;
+      height: 632px;
+      transition: transform 100ms linear;
+      transform-origin: center;
+      overflow: visible; /* はみ出しを許可 */
+    }
+
+    /* 画像（ドラッグ・ズーム用） */
+    .cropper-image {
+      position: absolute;
+      top: 0;
+      left: 0;
+      /* 元の画像サイズのまま（max-widthで制限） */
+      max-width: none;
+      max-height: none;
+      cursor: grab;
+      user-select: none;
+      transform-origin: 50% 50%; /* 中心を基準点に（Googleと同じ） */
+      transition: transform 100ms linear;
+    }
+
+    .cropper-image.dragging {
+      cursor: grabbing;
+      transition: none !important;
+    }
+
+    /* クロップ領域（サイズ可変） */
+    .crop-area {
+      position: absolute;
+      left: 104px;
+      top: 174px;
+      width: 632px;
+      height: 632px;
+      pointer-events: none;
+      z-index: 10;
+      transition: all 100ms linear;
+    }
+
+    /* SVG マスク（円形） */
+    .crop-mask {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .crop-mask-path {
+      fill: rgba(0, 0, 0, 0.5);
+    }
+
+    /* クロップ領域の枠線 */
+    .crop-border {
+      position: absolute;
+      inset: 0;
+      border: 2px solid white;
+      border-radius: 50%;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+    }
+
+    /* リサイズハンドル */
+    .resize-handle {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border: 2px solid #1a73e8;
+      border-radius: 50%;
+      cursor: pointer;
+      pointer-events: auto;
+      z-index: 20;
+      transition: transform 0.2s;
+    }
+
+    .resize-handle:hover {
+      transform: scale(1.2);
+    }
+
+    .resize-handle:active {
+      transform: scale(1.3);
+      background: #e3f2fd;
+    }
+
+    .resize-handle.top-left {
+      top: -10px;
+      left: -10px;
+      cursor: nwse-resize;
+    }
+
+    .resize-handle.top-right {
+      top: -10px;
+      right: -10px;
+      cursor: nesw-resize;
+    }
+
+    .resize-handle.bottom-left {
+      bottom: -10px;
+      left: -10px;
+      cursor: nesw-resize;
+    }
+
+    .resize-handle.bottom-right {
+      bottom: -10px;
+      right: -10px;
+      cursor: nwse-resize;
+    }
+
+    /* 三分割法グリッド */
+    .grid-overlay {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .grid-overlay.visible {
+      opacity: 1;
+    }
+
+    .grid-line {
+      position: absolute;
+      background: rgba(255, 255, 255, 0.5);
+    }
+
+    .grid-line.horizontal {
+      left: 0;
+      right: 0;
+      height: 1px;
+    }
+
+    .grid-line.vertical {
+      top: 0;
+      bottom: 0;
+      width: 1px;
+    }
+
+    /* 情報表示 */
+    .debug-info {
+      margin-top: 20px;
+      padding: 15px;
+      background: white;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+      color: #333;
+      max-width: 840px;
+      width: 100%;
+    }
+
+    .debug-info div {
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🖼️ Google式クロッパー デモ</h1>
+  <p class="info">
+    マウスドラッグで画像を移動 | マウスホイールでズーム | 回転ボタンで-90度回転
+  </p>
+
+  <div class="controls">
+    <button id="rotateBtn">↺ 左に回転</button>
+    <button id="resetBtn">↻ リセット</button>
+    <button id="verticalBtn" class="debug-only">📐 縦長画像</button>
+    <button id="horizontalBtn" class="debug-only">📐 横長画像</button>
+    <button id="squareBtn" class="debug-only">⬜ 正方形画像</button>
+  </div>
+
+  <!-- ローディングオーバーレイ -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+  </div>
+
+  <div class="cropper-container" id="cropperContainer">
+    <!-- 画像コンテナ（回転用） -->
+    <div class="image-container" id="imageContainer">
+      <img
+        id="cropperImage"
+        class="cropper-image"
+        src="https://picsum.photos/640/1136"
+        alt="Sample image"
+        draggable="false"
+      />
+    </div>
+
+    <!-- 三分割法グリッド -->
+    <div class="grid-overlay" id="gridOverlay">
+      <div class="grid-line horizontal" style="top: 33.33%"></div>
+      <div class="grid-line horizontal" style="top: 66.67%"></div>
+      <div class="grid-line vertical" style="left: 33.33%"></div>
+      <div class="grid-line vertical" style="left: 66.67%"></div>
+    </div>
+
+    <!-- クロップ領域 -->
+    <div class="crop-area" id="cropArea">
+      <div class="crop-border"></div>
+      <!-- リサイズハンドル -->
+      <div class="resize-handle top-left" data-handle="top-left"></div>
+      <div class="resize-handle top-right" data-handle="top-right"></div>
+      <div class="resize-handle bottom-left" data-handle="bottom-left"></div>
+      <div class="resize-handle bottom-right" data-handle="bottom-right"></div>
+    </div>
+  </div>
+
+  <div class="debug-info">
+    <div><strong>現在の状態:</strong></div>
+    <div id="debugTransform">transform: translate(0px, 0px) scale(1)</div>
+    <div id="debugRotation">rotation: 0deg</div>
+    <div id="debugCropRange">切り抜き範囲: 計算中...</div>
+  </div>
+
+  <script>
+    // デバッグモードの検出
+    const urlParams = new URLSearchParams(window.location.search);
+    const isDebugMode = urlParams.get('debug') === 'true';
+    if (isDebugMode) {
+      document.body.classList.add('debug-mode');
+    }
+
+    // ローディング表示の制御
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    function showLoading() {
+      loadingOverlay.classList.add('active');
+    }
+    function hideLoading() {
+      loadingOverlay.classList.remove('active');
+    }
+
+    // 状態管理
+    const state = {
+      // 画像の transform
+      x: 0,
+      y: 0,
+      scale: 1,
+
+      // 回転角度
+      rotation: 0,
+
+      // ドラッグ状態
+      isDragging: false,
+      startX: 0,
+      startY: 0,
+      startTransformX: 0,
+      startTransformY: 0,
+
+      // リサイズ状態
+      isResizing: false,
+      resizeHandle: null,
+      startCropWidth: 0,
+      startCropHeight: 0,
+      startCropLeft: 0,
+      startCropTop: 0,
+      pendingCropSize: null, // 拡大方向の場合、マウスアップ後に適用
+    };
+
+    // DOM 要素
+    const cropperContainer = document.getElementById('cropperContainer');
+    const imageContainer = document.getElementById('imageContainer');
+    const cropperImage = document.getElementById('cropperImage');
+    const gridOverlay = document.getElementById('gridOverlay');
+    const cropArea = document.getElementById('cropArea');
+    const rotateBtn = document.getElementById('rotateBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const verticalBtn = document.getElementById('verticalBtn');
+    const horizontalBtn = document.getElementById('horizontalBtn');
+    const squareBtn = document.getElementById('squareBtn');
+    const resizeHandles = document.querySelectorAll('.resize-handle');
+
+    // デバッグ情報
+    const debugTransform = document.getElementById('debugTransform');
+    const debugRotation = document.getElementById('debugRotation');
+    const debugCropRange = document.getElementById('debugCropRange');
+
+    // クロップ領域の情報（初期値）
+    const CROP_AREA_INITIAL = {
+      left: 104,
+      top: 174,
+      width: 632,
+      height: 632,
+    };
+
+    // 現在のクロップ領域（可変）
+    let cropAreaState = { ...CROP_AREA_INITIAL };
+
+    // 画像の元のサイズ
+    let IMAGE_WIDTH = 800;
+    let IMAGE_HEIGHT = 600;
+    let INITIAL_SCALE = 1;
+    let INITIAL_TRANSLATE_X = 0;
+    let INITIAL_TRANSLATE_Y = 0;
+
+    // 画像読み込み後にサイズを取得し、初期配置を計算
+    cropperImage.addEventListener('load', () => {
+      const naturalWidth = cropperImage.naturalWidth;
+      const naturalHeight = cropperImage.naturalHeight;
+
+      IMAGE_WIDTH = naturalWidth;
+      IMAGE_HEIGHT = naturalHeight;
+
+      // 画像コンテナの位置をクロップ領域と同じにする
+      imageContainer.style.left = `${CROP_AREA_INITIAL.left}px`;
+      imageContainer.style.top = `${CROP_AREA_INITIAL.top}px`;
+
+      // 短辺をクロップ領域に合わせる初期スケールを計算
+      const cropAreaSize = CROP_AREA_INITIAL.width;
+      const minDimension = Math.min(naturalWidth, naturalHeight);
+      INITIAL_SCALE = cropAreaSize / minDimension;
+
+      // transform-origin が 50% 50% の場合の translate 計算
+      // 画像は top: 0, left: 0 に配置され、その中心から transform が行われる
+      // 画像の中心（natural size）
+      const imageCenterX = naturalWidth / 2;
+      const imageCenterY = naturalHeight / 2;
+
+      // Container の中心
+      const containerCenterX = cropAreaSize / 2;
+      const containerCenterY = cropAreaSize / 2;
+
+      // 画像中心を container 中心に合わせるための translate
+      INITIAL_TRANSLATE_X = containerCenterX - imageCenterX;
+      INITIAL_TRANSLATE_Y = containerCenterY - imageCenterY;
+
+      // 初期状態をリセット
+      state.x = 0;
+      state.y = 0;
+      state.scale = INITIAL_SCALE;
+
+      applyTransform(false);
+      updateDebugInfo();
+    });
+
+    // Transform を適用
+    function applyTransform(withTransition = true) {
+      cropperImage.style.transition = withTransition ? 'transform 100ms linear' : 'none';
+
+      // 初期配置（中央） + ドラッグ移動量を合算
+      const totalTranslateX = INITIAL_TRANSLATE_X + state.x;
+      const totalTranslateY = INITIAL_TRANSLATE_Y + state.y;
+
+      cropperImage.style.transform = `translate(${totalTranslateX}px, ${totalTranslateY}px) scale(${state.scale})`;
+
+      imageContainer.style.transition = withTransition ? 'transform 100ms linear' : 'none';
+      imageContainer.style.transform = `rotate(${state.rotation}deg)`;
+
+      updateDebugInfo();
+    }
+
+    // デバッグ情報を更新
+    function updateDebugInfo() {
+      const totalTranslateX = INITIAL_TRANSLATE_X + state.x;
+      const totalTranslateY = INITIAL_TRANSLATE_Y + state.y;
+
+      debugTransform.textContent = `transform: translate(${totalTranslateX.toFixed(2)}px, ${totalTranslateY.toFixed(2)}px) scale(${state.scale.toFixed(4)})`;
+      debugRotation.textContent = `rotation: ${state.rotation}deg`;
+
+      // 切り抜き範囲の計算（簡易版）
+      const cropWidth = cropAreaState.width / state.scale;
+      const cropHeight = cropAreaState.height / state.scale;
+
+      debugCropRange.textContent = `切り抜き範囲（概算）: ${cropWidth.toFixed(0)}px × ${cropHeight.toFixed(0)}px`;
+    }
+
+    // マウスダウン（ドラッグ開始）
+    cropperImage.addEventListener('mousedown', (e) => {
+      state.isDragging = true;
+      state.startX = e.clientX;
+      state.startY = e.clientY;
+      state.startTransformX = state.x;
+      state.startTransformY = state.y;
+
+      cropperImage.classList.add('dragging');
+      gridOverlay.classList.add('visible');
+
+      // ドラッグ中は transition を無効化
+      applyTransform(false);
+    });
+
+    // ドラッグ範囲の制限を計算する関数
+    function clampTranslate(x, y) {
+      // スケール後の画像サイズ
+      const scaledWidth = IMAGE_WIDTH * state.scale;
+      const scaledHeight = IMAGE_HEIGHT * state.scale;
+
+      // Container サイズ
+      const containerWidth = cropAreaState.width;
+      const containerHeight = cropAreaState.height;
+
+      // transform-origin: 50% 50% の場合の画像左上の位置
+      // 画像左上 = (IMAGE_WIDTH/2 * (1 - scale), IMAGE_HEIGHT/2 * (1 - scale)) + translate
+      const imageLeft = IMAGE_WIDTH / 2 * (1 - state.scale) + INITIAL_TRANSLATE_X + x;
+      const imageTop = IMAGE_HEIGHT / 2 * (1 - state.scale) + INITIAL_TRANSLATE_Y + y;
+
+      // 制限条件：画像がクロップ領域を完全にカバーする
+      // total translate の最大値・最小値
+      const maxTotalTx = -IMAGE_WIDTH / 2 * (1 - state.scale);
+      const minTotalTx = containerWidth - IMAGE_WIDTH / 2 * (1 + state.scale);
+      const maxTotalTy = -IMAGE_HEIGHT / 2 * (1 - state.scale);
+      const minTotalTy = containerHeight - IMAGE_HEIGHT / 2 * (1 + state.scale);
+
+      // state.x/y の制限
+      const minX = minTotalTx - INITIAL_TRANSLATE_X;
+      const maxX = maxTotalTx - INITIAL_TRANSLATE_X;
+      const minY = minTotalTy - INITIAL_TRANSLATE_Y;
+      const maxY = maxTotalTy - INITIAL_TRANSLATE_Y;
+
+      return {
+        x: Math.max(minX, Math.min(maxX, x)),
+        y: Math.max(minY, Math.min(maxY, y))
+      };
+    }
+
+    // マウスムーブ（ドラッグ中）
+    document.addEventListener('mousemove', (e) => {
+      if (!state.isDragging) return;
+
+      const deltaX = e.clientX - state.startX;
+      const deltaY = e.clientY - state.startY;
+
+      const newX = state.startTransformX + deltaX;
+      const newY = state.startTransformY + deltaY;
+
+      // ドラッグ範囲を制限
+      const clamped = clampTranslate(newX, newY);
+      state.x = clamped.x;
+      state.y = clamped.y;
+
+      applyTransform(false);
+    });
+
+    // マウスアップ（ドラッグ終了）
+    document.addEventListener('mouseup', () => {
+      if (!state.isDragging) return;
+
+      state.isDragging = false;
+      cropperImage.classList.remove('dragging');
+      gridOverlay.classList.remove('visible');
+
+      // ドラッグ終了後は transition を有効化
+      applyTransform(true);
+    });
+
+    // マウスホイール（ズーム）
+    cropperContainer.addEventListener('wheel', (e) => {
+      e.preventDefault();
+
+      // ズーム倍率の計算（INITIAL_SCALEの0.5倍〜5倍の範囲）
+      const delta = e.deltaY > 0 ? 0.9 : 1.1;
+      const newScale = Math.max(INITIAL_SCALE * 0.5, Math.min(state.scale * delta, INITIAL_SCALE * 5));
+
+      // scale の変化率
+      const scaleRatio = newScale / state.scale;
+
+      // transform-origin: 50% 50% でクロップ領域の中心を固定してズーム
+      // Container の中心
+      const containerCenterX = cropAreaState.width / 2;
+      const containerCenterY = cropAreaState.height / 2;
+
+      // 画像の中心（natural size）
+      const imageCenterX = IMAGE_WIDTH / 2;
+      const imageCenterY = IMAGE_HEIGHT / 2;
+
+      // クロップ領域の中心を固定するための translate 計算
+      const newX = (containerCenterX - imageCenterX) * (1 - scaleRatio) + state.x * scaleRatio;
+      const newY = (containerCenterY - imageCenterY) * (1 - scaleRatio) + state.y * scaleRatio;
+      state.scale = newScale;
+
+      // ズーム後のドラッグ範囲を制限
+      const clamped = clampTranslate(newX, newY);
+      state.x = clamped.x;
+      state.y = clamped.y;
+
+      // マウスホイールは常にリアルタイムプレビュー
+      applyTransform(true);
+    });
+
+    // 回転ボタン
+    rotateBtn.addEventListener('click', () => {
+      state.rotation -= 90;
+      // 360度で正規化（オプション）
+      if (state.rotation <= -360) {
+        state.rotation = 0;
+      }
+      applyTransform(true);
+    });
+
+    // リサイズハンドルのドラッグ開始
+    resizeHandles.forEach(handle => {
+      handle.addEventListener('mousedown', (e) => {
+        e.stopPropagation(); // 画像ドラッグと競合しないように
+
+        state.isResizing = true;
+        state.resizeHandle = handle.dataset.handle;
+        state.startX = e.clientX;
+        state.startY = e.clientY;
+        state.startCropWidth = cropAreaState.width;
+        state.startCropHeight = cropAreaState.height;
+        state.startCropLeft = cropAreaState.left;
+        state.startCropTop = cropAreaState.top;
+
+        gridOverlay.classList.add('visible');
+      });
+    });
+
+    // リサイズ中の処理
+    document.addEventListener('mousemove', (e) => {
+      if (!state.isResizing) return;
+
+      const deltaX = e.clientX - state.startX;
+      const deltaY = e.clientY - state.startY;
+
+      let newWidth = state.startCropWidth;
+      let newHeight = state.startCropHeight;
+      let newLeft = state.startCropLeft;
+      let newTop = state.startCropTop;
+
+      // ハンドルの位置に応じてサイズを変更
+      switch (state.resizeHandle) {
+        case 'top-left':
+          newWidth = state.startCropWidth - deltaX;
+          newHeight = state.startCropHeight - deltaY;
+          newLeft = state.startCropLeft + deltaX;
+          newTop = state.startCropTop + deltaY;
+          break;
+        case 'top-right':
+          newWidth = state.startCropWidth + deltaX;
+          newHeight = state.startCropHeight - deltaY;
+          newTop = state.startCropTop + deltaY;
+          break;
+        case 'bottom-left':
+          newWidth = state.startCropWidth - deltaX;
+          newHeight = state.startCropHeight + deltaY;
+          newLeft = state.startCropLeft + deltaX;
+          break;
+        case 'bottom-right':
+          newWidth = state.startCropWidth + deltaX;
+          newHeight = state.startCropHeight + deltaY;
+          break;
+      }
+
+      // 正方形を保つ（平均値を使用）
+      const newSize = (newWidth + newHeight) / 2;
+
+      // 最小サイズ制限
+      const minSize = 200;
+      const maxSize = 800;
+      const clampedSize = Math.max(minSize, Math.min(maxSize, newSize));
+
+      // 中心位置を保つように left/top を調整
+      const sizeDiff = clampedSize - state.startCropWidth;
+      const centerAdjustLeft = state.startCropLeft - sizeDiff / 2;
+      const centerAdjustTop = state.startCropTop - sizeDiff / 2;
+
+      // 拡大方向（切り抜き箇所を小さく）か縮小方向（切り抜き箇所を大きく）か
+      const isZoomingIn = clampedSize < state.startCropWidth;
+
+      if (isZoomingIn) {
+        // 拡大方向: マウスアップ後に適用（プレビューなし）
+        state.pendingCropSize = {
+          width: clampedSize,
+          height: clampedSize,
+          left: centerAdjustLeft,
+          top: centerAdjustTop,
+        };
+      } else {
+        // 縮小方向: リアルタイムプレビュー
+        applyCropResize(clampedSize, clampedSize, centerAdjustLeft, centerAdjustTop);
+      }
+    });
+
+    // リサイズ終了
+    document.addEventListener('mouseup', () => {
+      if (!state.isResizing) return;
+
+      state.isResizing = false;
+      gridOverlay.classList.remove('visible');
+
+      // 拡大方向の場合、ここで適用
+      if (state.pendingCropSize) {
+        applyCropResize(
+          state.pendingCropSize.width,
+          state.pendingCropSize.height,
+          state.pendingCropSize.left,
+          state.pendingCropSize.top
+        );
+        state.pendingCropSize = null;
+      }
+    });
+
+    // クロップ領域のリサイズを適用
+    function applyCropResize(newWidth, newHeight, newLeft, newTop) {
+      // クロップ領域のサイズ変更
+      cropAreaState.width = newWidth;
+      cropAreaState.height = newHeight;
+      cropAreaState.left = newLeft;
+      cropAreaState.top = newTop;
+
+      cropArea.style.width = `${newWidth}px`;
+      cropArea.style.height = `${newHeight}px`;
+      cropArea.style.left = `${newLeft}px`;
+      cropArea.style.top = `${newTop}px`;
+
+      // 画像コンテナの位置もクロップ領域と同期
+      imageContainer.style.left = `${newLeft}px`;
+      imageContainer.style.top = `${newTop}px`;
+      imageContainer.style.width = `${newWidth}px`;
+      imageContainer.style.height = `${newHeight}px`;
+
+      // 画像の scale を調整（クロップ領域が小さくなる = 拡大）
+      const minDimension = Math.min(IMAGE_WIDTH, IMAGE_HEIGHT);
+      const newInitialScale = newWidth / minDimension;
+      const scaleRatio = newInitialScale / INITIAL_SCALE;
+
+      // 新しい初期配置を計算（transform-origin: 50% 50% の場合）
+      const imageCenterX = IMAGE_WIDTH / 2;
+      const imageCenterY = IMAGE_HEIGHT / 2;
+      const containerCenterX = newWidth / 2;
+      const containerCenterY = newHeight / 2;
+
+      INITIAL_TRANSLATE_X = containerCenterX - imageCenterX;
+      INITIAL_TRANSLATE_Y = containerCenterY - imageCenterY;
+      INITIAL_SCALE = newInitialScale;
+
+      state.scale = newInitialScale;
+
+      // スケール変更に応じて translate を調整（相対的な位置を保つ）
+      const newX = state.x * scaleRatio;
+      const newY = state.y * scaleRatio;
+
+      // リサイズ後のドラッグ範囲を制限
+      const clamped = clampTranslate(newX, newY);
+      state.x = clamped.x;
+      state.y = clamped.y;
+
+      applyTransform(true);
+    }
+
+    // リセットボタン
+    resetBtn.addEventListener('click', () => {
+      // クロップ領域をリセット
+      cropAreaState = { ...CROP_AREA_INITIAL };
+      cropArea.style.width = `${CROP_AREA_INITIAL.width}px`;
+      cropArea.style.height = `${CROP_AREA_INITIAL.height}px`;
+      cropArea.style.left = `${CROP_AREA_INITIAL.left}px`;
+      cropArea.style.top = `${CROP_AREA_INITIAL.top}px`;
+
+      // 画像コンテナもリセット
+      imageContainer.style.left = `${CROP_AREA_INITIAL.left}px`;
+      imageContainer.style.top = `${CROP_AREA_INITIAL.top}px`;
+      imageContainer.style.width = `${CROP_AREA_INITIAL.width}px`;
+      imageContainer.style.height = `${CROP_AREA_INITIAL.height}px`;
+
+      // 初期配置を再計算（transform-origin: 50% 50% の場合）
+      const cropAreaSize = CROP_AREA_INITIAL.width;
+      const minDimension = Math.min(IMAGE_WIDTH, IMAGE_HEIGHT);
+      INITIAL_SCALE = cropAreaSize / minDimension;
+
+      const imageCenterX = IMAGE_WIDTH / 2;
+      const imageCenterY = IMAGE_HEIGHT / 2;
+      const containerCenterX = cropAreaSize / 2;
+      const containerCenterY = cropAreaSize / 2;
+
+      INITIAL_TRANSLATE_X = containerCenterX - imageCenterX;
+      INITIAL_TRANSLATE_Y = containerCenterY - imageCenterY;
+
+      // 状態をリセット
+      state.x = 0;
+      state.y = 0;
+      state.scale = INITIAL_SCALE;
+      state.rotation = 0;
+
+      applyTransform(true);
+    });
+
+    // 画像切り替え関数（ローディング表示あり）
+    function changeImage(width, height) {
+      showLoading();
+
+      // すべてのボタンを無効化
+      const allButtons = document.querySelectorAll('button');
+      allButtons.forEach(btn => btn.disabled = true);
+
+      // 新しい画像を読み込み
+      const newSrc = `https://picsum.photos/${width}/${height}?random=${Date.now()}`;
+
+      // 画像がロードされるまで待つ
+      cropperImage.onload = () => {
+        hideLoading();
+        // ボタンを再度有効化
+        allButtons.forEach(btn => btn.disabled = false);
+      };
+
+      cropperImage.onerror = () => {
+        hideLoading();
+        // エラー時もボタンを有効化
+        allButtons.forEach(btn => btn.disabled = false);
+        alert('画像の読み込みに失敗しました');
+      };
+
+      cropperImage.src = newSrc;
+    }
+
+    // 縦長画像ボタン
+    verticalBtn.addEventListener('click', () => {
+      changeImage(640, 1136);
+    });
+
+    // 横長画像ボタン
+    horizontalBtn.addEventListener('click', () => {
+      changeImage(1136, 640);
+    });
+
+    // 正方形画像ボタン
+    squareBtn.addEventListener('click', () => {
+      changeImage(800, 800);
+    });
+
+    // 初期表示
+    applyTransform(false);
+  </script>
+</body>
+</html>
