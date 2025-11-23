@@ -509,4 +509,50 @@ test.describe('Google式クロッパー デモ', () => {
       expect(afterRotation).toBe('-90deg');
     });
   });
+
+  test.describe('クロップ領域のUI', () => {
+    test('クロップ領域に四隅を結ぶ1pxの白いborderが表示される', async ({ page }) => {
+      const cropArea = page.locator('#cropArea');
+      await cropArea.waitFor({ state: 'visible' });
+
+      // borderスタイルを取得
+      const borderStyle = await cropArea.evaluate((el: HTMLElement) => {
+        const computed = window.getComputedStyle(el);
+        return {
+          borderTopWidth: computed.borderTopWidth,
+          borderRightWidth: computed.borderRightWidth,
+          borderBottomWidth: computed.borderBottomWidth,
+          borderLeftWidth: computed.borderLeftWidth,
+          borderTopColor: computed.borderTopColor,
+          borderRightColor: computed.borderRightColor,
+          borderBottomColor: computed.borderBottomColor,
+          borderLeftColor: computed.borderLeftColor,
+          borderTopStyle: computed.borderTopStyle,
+          borderRightStyle: computed.borderRightStyle,
+          borderBottomStyle: computed.borderBottomStyle,
+          borderLeftStyle: computed.borderLeftStyle,
+        };
+      });
+
+      console.log('Border style:', borderStyle);
+
+      // 全ての辺が1pxであること
+      expect(borderStyle.borderTopWidth).toBe('1px');
+      expect(borderStyle.borderRightWidth).toBe('1px');
+      expect(borderStyle.borderBottomWidth).toBe('1px');
+      expect(borderStyle.borderLeftWidth).toBe('1px');
+
+      // 全ての辺がsolidであること
+      expect(borderStyle.borderTopStyle).toBe('solid');
+      expect(borderStyle.borderRightStyle).toBe('solid');
+      expect(borderStyle.borderBottomStyle).toBe('solid');
+      expect(borderStyle.borderLeftStyle).toBe('solid');
+
+      // 全ての辺が白色であること（rgb(255, 255, 255)）
+      expect(borderStyle.borderTopColor).toBe('rgb(255, 255, 255)');
+      expect(borderStyle.borderRightColor).toBe('rgb(255, 255, 255)');
+      expect(borderStyle.borderBottomColor).toBe('rgb(255, 255, 255)');
+      expect(borderStyle.borderLeftColor).toBe('rgb(255, 255, 255)');
+    });
+  });
 });
