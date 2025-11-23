@@ -4,6 +4,8 @@
   "description": "Googleプロフィール画像クロッパーの挙動調査ツール",
   "type": "module",
   "scripts": {
+    "build": "esbuild src/main.ts --bundle --outfile=dist/cropper.js --format=esm",
+    "build:watch": "npm run build -- --watch",
     "investigate": "tsx src/investigate-cropper.ts",
     "investigate:headless": "tsx src/investigate-cropper.ts --headless",
     "test": "playwright test",
@@ -23,6 +25,7 @@
   "devDependencies": {
     "@playwright/test": "^1.48.0",
     "@types/node": "^22.0.0",
+    "esbuild": "^0.27.0",
     "http-server": "^14.1.1",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3"
