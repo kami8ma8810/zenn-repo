@@ -220,6 +220,42 @@ test.describe('Google式クロッパー デモ', () => {
       expect(afterTransform.x).not.toBe(initialTransform.x);
       expect(afterTransform.y).not.toBe(initialTransform.y);
     });
+
+    test('初期状態からズームアウトできない（最小スケール制限）', async ({ page }) => {
+      const image = page.locator('#cropperImage');
+      await image.waitFor({ state: 'visible' });
+
+      // 初期 scale を取得
+      const initialScale = await image.evaluate((img: HTMLImageElement) => {
+        const match = img.style.transform.match(/scale\(([^)]+)\)/);
+        return match ? parseFloat(match[1]) : 1;
+      });
+
+      // 画像の中心でズームアウトを試みる
+      const imageBbox = await image.boundingBox();
+      if (!imageBbox) throw new Error('Image bounding box not found');
+
+      const imageCenterX = imageBbox.x + imageBbox.width / 2;
+      const imageCenterY = imageBbox.y + imageBbox.height / 2;
+
+      await page.mouse.move(imageCenterX, imageCenterY);
+      // 下スクロール = ズームアウト（複数回試行）
+      await page.mouse.wheel(0, 100);
+      await page.mouse.wheel(0, 100);
+      await page.mouse.wheel(0, 100);
+
+      // ズームアウト後の scale を取得
+      const afterZoomOutScale = await image.evaluate((img: HTMLImageElement) => {
+        const match = img.style.transform.match(/scale\(([^)]+)\)/);
+        return match ? parseFloat(match[1]) : 1;
+      });
+
+      console.log('Initial scale:', initialScale);
+      console.log('After zoom out attempts:', afterZoomOutScale);
+
+      // 初期スケールより小さくならないはず（クロップ領域に画像外の部分が入らないように）
+      expect(afterZoomOutScale).toBeGreaterThanOrEqual(initialScale);
+    });
   });
 
   test.describe('回転機能', () => {

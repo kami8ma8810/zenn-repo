@@ -560,9 +560,10 @@
     cropperContainer.addEventListener('wheel', (e) => {
       e.preventDefault();
 
-      // ズーム倍率の計算（INITIAL_SCALEの0.5倍〜5倍の範囲）
+      // ズーム倍率の計算（INITIAL_SCALE以上、INITIAL_SCALEの5倍以下）
+      // 初期状態より小さくするとクロップ領域に画像外の部分が入ってしまうため、INITIAL_SCALEが最小値
       const delta = e.deltaY > 0 ? 0.9 : 1.1;
-      const newScale = Math.max(INITIAL_SCALE * 0.5, Math.min(state.scale * delta, INITIAL_SCALE * 5));
+      const newScale = Math.max(INITIAL_SCALE, Math.min(state.scale * delta, INITIAL_SCALE * 5));
 
       // scale の変化率
       const scaleRatio = newScale / state.scale;
