@@ -7,6 +7,57 @@ test.describe('Google式クロッパー デモ', () => {
   });
 
   test.describe('初期状態', () => {
+    test('縦長画像の初期クロップ位置が上下左右の中央になる', async ({ page }) => {
+      const image = page.locator('#cropperImage');
+      await image.waitFor({ state: 'visible' });
+
+      // 画像のnatural sizeを取得
+      const naturalSize = await image.evaluate((img: HTMLImageElement) => ({
+        width: img.naturalWidth,
+        height: img.naturalHeight,
+      }));
+
+      // transform を取得
+      const transform = await image.evaluate((img: HTMLImageElement) => {
+        const transformMatch = img.style.transform.match(/translate\(([^,]+),\s*([^)]+)\)\s*scale\(([^)]+)\)/);
+        if (!transformMatch) return { x: 0, y: 0, scale: 1 };
+        return {
+          x: parseFloat(transformMatch[1]),
+          y: parseFloat(transformMatch[2]),
+          scale: parseFloat(transformMatch[3]),
+        };
+      });
+
+      // クロップ領域のサイズ（632px固定）
+      const cropAreaSize = 632;
+      const containerCenterX = cropAreaSize / 2;
+      const containerCenterY = cropAreaSize / 2;
+
+      // クロップ領域が見ている画像上の位置（%）を計算
+      const imageCenterX = naturalSize.width / 2;
+      const imageCenterY = naturalSize.height / 2;
+
+      const currentImageCenterX = imageCenterX + transform.x;
+      const currentImageCenterY = imageCenterY + transform.y;
+
+      const offsetFromImageCenterX = containerCenterX - currentImageCenterX;
+      const offsetFromImageCenterY = containerCenterY - currentImageCenterY;
+
+      const imageSpaceOffsetX = offsetFromImageCenterX / transform.scale;
+      const imageSpaceOffsetY = offsetFromImageCenterY / transform.scale;
+
+      const cropCenterRatioX = 0.5 + imageSpaceOffsetX / naturalSize.width;
+      const cropCenterRatioY = 0.5 + imageSpaceOffsetY / naturalSize.height;
+
+      console.log('Natural size:', naturalSize);
+      console.log('Crop center ratio X:', cropCenterRatioX);
+      console.log('Crop center ratio Y:', cropCenterRatioY);
+
+      // クロップ領域の中心が画像の中央（0.5, 0.5）にあるはず
+      expect(Math.abs(cropCenterRatioX - 0.5)).toBeLessThan(0.01);
+      expect(Math.abs(cropCenterRatioY - 0.5)).toBeLessThan(0.01);
+    });
+
     test('縦長画像（640×1136）の初期配置が正しい', async ({ page }) => {
       // 画像要素を取得
       const image = page.locator('#cropperImage');
@@ -178,18 +229,7 @@ test.describe('Google式クロッパー デモ', () => {
       const image = page.locator('#cropperImage');
       await image.waitFor({ state: 'visible' });
 
-      // 初期 transform を取得
-      const initialTransform = await image.evaluate((img: HTMLImageElement) => {
-        const transformMatch = img.style.transform.match(/translate\(([^,]+),\s*([^)]+)\)\s*scale\(([^)]+)\)/);
-        if (!transformMatch) return { x: 0, y: 0, scale: 1 };
-        return {
-          x: parseFloat(transformMatch[1]),
-          y: parseFloat(transformMatch[2]),
-          scale: parseFloat(transformMatch[3]),
-        };
-      });
-
-      // 画像の中心でズームイン
+      // 画像を少し下方向にドラッグ（中央から外す）
       const imageBbox = await image.boundingBox();
       if (!imageBbox) throw new Error('Image bounding box not found');
 
@@ -197,10 +237,12 @@ test.describe('Google式クロッパー デモ', () => {
       const imageCenterY = imageBbox.y + imageBbox.height / 2;
 
       await page.mouse.move(imageCenterX, imageCenterY);
-      await page.mouse.wheel(0, -100);
+      await page.mouse.down();
+      await page.mouse.move(imageCenterX, imageCenterY - 100, { steps: 10 }); // 上方向に100pxドラッグ
+      await page.mouse.up();
 
-      // ズーム後の transform を取得
-      const afterTransform = await image.evaluate((img: HTMLImageElement) => {
+      // ドラッグ後の transform を取得
+      const afterDragTransform = await image.evaluate((img: HTMLImageElement) => {
         const transformMatch = img.style.transform.match(/translate\(([^,]+),\s*([^)]+)\)\s*scale\(([^)]+)\)/);
         if (!transformMatch) return { x: 0, y: 0, scale: 1 };
         return {
@@ -210,15 +252,116 @@ test.describe('Google式クロッパー デモ', () => {
         };
       });
 
-      console.log('Initial transform:', initialTransform);
-      console.log('After zoom:', afterTransform);
+      // ズームイン
+      const newImageBbox = await image.boundingBox();
+      if (!newImageBbox) throw new Error('Image bounding box not found');
+      const newImageCenterX = newImageBbox.x + newImageBbox.width / 2;
+      const newImageCenterY = newImageBbox.y + newImageBbox.height / 2;
+
+      await page.mouse.move(newImageCenterX, newImageCenterY);
+      await page.mouse.wheel(0, -100);
+
+      // ズーム後の transform を取得
+      const afterZoomTransform = await image.evaluate((img: HTMLImageElement) => {
+        const transformMatch = img.style.transform.match(/translate\(([^,]+),\s*([^)]+)\)\s*scale\(([^)]+)\)/);
+        if (!transformMatch) return { x: 0, y: 0, scale: 1 };
+        return {
+          x: parseFloat(transformMatch[1]),
+          y: parseFloat(transformMatch[2]),
+          scale: parseFloat(transformMatch[3]),
+        };
+      });
+
+      console.log('After drag transform:', afterDragTransform);
+      console.log('After zoom transform:', afterZoomTransform);
 
       // scale が変化している
-      expect(afterTransform.scale).not.toBe(initialTransform.scale);
+      expect(afterZoomTransform.scale).not.toBe(afterDragTransform.scale);
 
-      // translate も変化している（クロップ領域中心を固定するため）
-      expect(afterTransform.x).not.toBe(initialTransform.x);
-      expect(afterTransform.y).not.toBe(initialTransform.y);
+      // translate も変化している（クロップ位置を固定するため）
+      // 初期状態（中央）ではない位置からズームするので、translate が調整される
+      expect(afterZoomTransform.y).not.toBe(afterDragTransform.y);
+    });
+
+    test('画像が下端にいるときは下端を基準にズームする', async ({ page }) => {
+      const image = page.locator('#cropperImage');
+      await image.waitFor({ state: 'visible' });
+
+      // 画像を下端までドラッグ
+      const imageBbox = await image.boundingBox();
+      if (!imageBbox) throw new Error('Image bounding box not found');
+
+      const imageCenterX = imageBbox.x + imageBbox.width / 2;
+      const imageCenterY = imageBbox.y + imageBbox.height / 2;
+
+      // 下方向に大きくドラッグ（画像の下端がクロップ領域の中心付近に来るように）
+      await page.mouse.move(imageCenterX, imageCenterY);
+      await page.mouse.down();
+      await page.mouse.move(imageCenterX, imageCenterY - 300, { steps: 10 });
+      await page.mouse.up();
+
+      // ドラッグ後の transform を取得
+      const afterDragTransform = await image.evaluate((img: HTMLImageElement) => {
+        const transformMatch = img.style.transform.match(/translate\(([^,]+),\s*([^)]+)\)\s*scale\(([^)]+)\)/);
+        if (!transformMatch) return { x: 0, y: 0, scale: 1 };
+        return {
+          x: parseFloat(transformMatch[1]),
+          y: parseFloat(transformMatch[2]),
+          scale: parseFloat(transformMatch[3]),
+        };
+      });
+
+      // 画像のnatural sizeを取得
+      const naturalSize = await image.evaluate((img: HTMLImageElement) => ({
+        width: img.naturalWidth,
+        height: img.naturalHeight,
+      }));
+
+      // クロップ領域のサイズ（632px固定）
+      const cropAreaSize = 632;
+      const containerCenterY = cropAreaSize / 2;
+
+      // ズーム前のクロップ領域が見ている画像上の位置（%）を計算
+      const imageNaturalCenterY = naturalSize.height / 2;
+      const currentImageCenterY = imageNaturalCenterY + afterDragTransform.y;
+      const offsetFromImageCenterY = containerCenterY - currentImageCenterY;
+      const imageSpaceOffsetY = offsetFromImageCenterY / afterDragTransform.scale;
+      const cropCenterRatioYBefore = 0.5 + imageSpaceOffsetY / naturalSize.height;
+
+      console.log('Before zoom - Crop center ratio Y:', cropCenterRatioYBefore);
+
+      // ズームイン
+      const newImageBbox = await image.boundingBox();
+      if (!newImageBbox) throw new Error('Image bounding box not found');
+      const zoomImageCenterX = newImageBbox.x + newImageBbox.width / 2;
+      const zoomImageCenterY = newImageBbox.y + newImageBbox.height / 2;
+
+      await page.mouse.move(zoomImageCenterX, zoomImageCenterY);
+      await page.mouse.wheel(0, -100); // ズームイン
+
+      // ズーム後の transform を取得
+      const afterZoomTransform = await image.evaluate((img: HTMLImageElement) => {
+        const transformMatch = img.style.transform.match(/translate\(([^,]+),\s*([^)]+)\)\s*scale\(([^)]+)\)/);
+        if (!transformMatch) return { x: 0, y: 0, scale: 1 };
+        return {
+          x: parseFloat(transformMatch[1]),
+          y: parseFloat(transformMatch[2]),
+          scale: parseFloat(transformMatch[3]),
+        };
+      });
+
+      // ズーム後のクロップ領域が見ている画像上の位置（%）を計算
+      const currentImageCenterYAfter = imageNaturalCenterY + afterZoomTransform.y;
+      const offsetFromImageCenterYAfter = containerCenterY - currentImageCenterYAfter;
+      const imageSpaceOffsetYAfter = offsetFromImageCenterYAfter / afterZoomTransform.scale;
+      const cropCenterRatioYAfter = 0.5 + imageSpaceOffsetYAfter / naturalSize.height;
+
+      console.log('After zoom - Crop center ratio Y:', cropCenterRatioYAfter);
+      console.log('Difference:', Math.abs(cropCenterRatioYAfter - cropCenterRatioYBefore));
+
+      // ズーム前後でクロップ領域が見ている画像上の位置（%）が変わらないはず
+      // 誤差を考慮して0.01以内であればOK
+      expect(Math.abs(cropCenterRatioYAfter - cropCenterRatioYBefore)).toBeLessThan(0.01);
     });
 
     test('初期状態からズームアウトできない（最小スケール制限）', async ({ page }) => {

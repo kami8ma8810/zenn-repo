@@ -388,6 +388,33 @@
     const debugRotation = document.getElementById('debugRotation');
     const debugCropRange = document.getElementById('debugCropRange');
 
+    // ⭐ リロードのたびに画像を順番に切り替え（縦長→横長→正方形→縦長...）
+    const IMAGE_TYPES = {
+      vertical: { width: 640, height: 1136, label: '縦長' },
+      horizontal: { width: 1136, height: 640, label: '横長' },
+      square: { width: 800, height: 800, label: '正方形' },
+    };
+    const IMAGE_TYPE_ORDER = ['vertical', 'horizontal', 'square'];
+
+    // ページロード時に次の画像タイプに切り替え
+    function rotateImageOnLoad() {
+      const currentType = localStorage.getItem('currentImageType') || 'square'; // デフォルトは square（次が vertical になる）
+      const currentIndex = IMAGE_TYPE_ORDER.indexOf(currentType);
+      const nextIndex = (currentIndex + 1) % IMAGE_TYPE_ORDER.length;
+      const nextType = IMAGE_TYPE_ORDER[nextIndex];
+      const nextImage = IMAGE_TYPES[nextType];
+
+      // localStorage に保存
+      localStorage.setItem('currentImageType', nextType);
+
+      // 画像を設定
+      cropperImage.src = `https://picsum.photos/${nextImage.width}/${nextImage.height}?random=${Date.now()}`;
+      console.log(`🔄 画像タイプ切り替え: ${IMAGE_TYPES[currentType]?.label || '初回'} → ${nextImage.label} (${nextImage.width}×${nextImage.height})`);
+    }
+
+    // ページロード時に実行
+    rotateImageOnLoad();
+
     // クロップ領域の情報（初期値）
     const CROP_AREA_INITIAL = {
       left: 104,
@@ -568,7 +595,6 @@
       // scale の変化率
       const scaleRatio = newScale / state.scale;
 
-      // transform-origin: 50% 50% でクロップ領域の中心を固定してズーム
       // Container の中心
       const containerCenterX = cropAreaState.width / 2;
       const containerCenterY = cropAreaState.height / 2;
@@ -577,9 +603,39 @@
       const imageCenterX = IMAGE_WIDTH / 2;
       const imageCenterY = IMAGE_HEIGHT / 2;
 
-      // クロップ領域の中心を固定するための translate 計算
-      const newX = (containerCenterX - imageCenterX) * (1 - scaleRatio) + state.x * scaleRatio;
-      const newY = (containerCenterY - imageCenterY) * (1 - scaleRatio) + state.y * scaleRatio;
+      // ⭐ 画像の現在位置に応じてズームの基準点を動的に調整
+      //
+      // 目標: クロップ領域が見ている画像上の位置（natural座標系）を固定したまま、ズームする
+      //
+      // transform-origin が 50% 50% (imageCenterX, imageCenterY) の場合の計算：
+      // 画像上の点 (imageX, imageY) が container座標系で表示される位置は：
+      // displayX = (imageX - imageCenterX) * scale + translateX + imageCenterX
+      // displayY = (imageY - imageCenterY) * scale + translateY + imageCenterY
+      //
+      // クロップ領域の中心 (containerCenterX, containerCenterY) が
+      // 画像上の (imageX, imageY) を見ているとき：
+      // containerCenterY = (imageY - imageCenterY) * scale + translateY + imageCenterY
+      //
+      // これを imageY について解くと：
+      // imageY = (containerCenterY - imageCenterY - translateY) / scale + imageCenterY
+
+      // 現在の total translate（INITIAL_TRANSLATE + state）を取得
+      const currentTotalTranslateX = INITIAL_TRANSLATE_X + state.x;
+      const currentTotalTranslateY = INITIAL_TRANSLATE_Y + state.y;
+
+      // 現在クロップ領域が見ている画像上の位置（natural座標系）
+      const currentImageX = (containerCenterX - imageCenterX - currentTotalTranslateX) / state.scale + imageCenterX;
+      const currentImageY = (containerCenterY - imageCenterY - currentTotalTranslateY) / state.scale + imageCenterY;
+
+      // ズーム後も同じ画像上の位置を見るように translate を計算
+      // containerCenterY = (imageY - imageCenterY) * newScale + newTotalTranslateY + imageCenterY
+      // newTotalTranslateY = containerCenterY - imageCenterY - (imageY - imageCenterY) * newScale
+      const newTotalTranslateX = containerCenterX - imageCenterX - (currentImageX - imageCenterX) * newScale;
+      const newTotalTranslateY = containerCenterY - imageCenterY - (currentImageY - imageCenterY) * newScale;
+
+      // state に戻す（INITIAL_TRANSLATE を引く）
+      const newX = newTotalTranslateX - INITIAL_TRANSLATE_X;
+      const newY = newTotalTranslateY - INITIAL_TRANSLATE_Y;
       state.scale = newScale;
 
       // ズーム後のドラッグ範囲を制限
