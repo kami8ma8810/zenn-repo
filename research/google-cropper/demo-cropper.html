@@ -223,7 +223,6 @@
     /* 三分割法グリッド */
     .grid-overlay {
       position: absolute;
-      inset: 0;
       opacity: 0;
       transition: opacity 0.2s;
       pointer-events: none;
@@ -433,6 +432,9 @@
     let INITIAL_TRANSLATE_X = 0;
     let INITIAL_TRANSLATE_Y = 0;
 
+    // クロップ領域の最小サイズ（5倍ズーム時のサイズ）
+    const MIN_CROP_SIZE = CROP_AREA_INITIAL.width / 5;
+
     // 画像読み込み後にサイズを取得し、初期配置を計算
     cropperImage.addEventListener('load', () => {
       const naturalWidth = cropperImage.naturalWidth;
@@ -444,6 +446,12 @@
       // 画像コンテナの位置をクロップ領域と同じにする
       imageContainer.style.left = `${CROP_AREA_INITIAL.left}px`;
       imageContainer.style.top = `${CROP_AREA_INITIAL.top}px`;
+
+      // グリッド線もクロップ領域と同じサイズ・位置に設定
+      gridOverlay.style.width = `${CROP_AREA_INITIAL.width}px`;
+      gridOverlay.style.height = `${CROP_AREA_INITIAL.height}px`;
+      gridOverlay.style.left = `${CROP_AREA_INITIAL.left}px`;
+      gridOverlay.style.top = `${CROP_AREA_INITIAL.top}px`;
 
       // 短辺をクロップ領域に合わせる初期スケールを計算
       const cropAreaSize = CROP_AREA_INITIAL.width;
@@ -725,30 +733,79 @@
       // 正方形を保つ（平均値を使用）
       const newSize = (newWidth + newHeight) / 2;
 
-      // 最小サイズ制限
-      const minSize = 200;
+      // 最小サイズ制限（5倍ズーム時のサイズ = 初期クロップサイズ / 5）
+      const minSize = MIN_CROP_SIZE;
       const maxSize = 800;
       const clampedSize = Math.max(minSize, Math.min(maxSize, newSize));
 
-      // 中心位置を保つように left/top を調整
-      const sizeDiff = clampedSize - state.startCropWidth;
-      const centerAdjustLeft = state.startCropLeft - sizeDiff / 2;
-      const centerAdjustTop = state.startCropTop - sizeDiff / 2;
+      // つまんでいる角と反対側の角を固定点としてリサイズ
+      let fixedLeft, fixedTop;
+
+      switch (state.resizeHandle) {
+        case 'top-left':
+          // 右下を固定
+          fixedLeft = state.startCropLeft + state.startCropWidth - clampedSize;
+          fixedTop = state.startCropTop + state.startCropHeight - clampedSize;
+          break;
+        case 'top-right':
+          // 左下を固定
+          fixedLeft = state.startCropLeft;
+          fixedTop = state.startCropTop + state.startCropHeight - clampedSize;
+          break;
+        case 'bottom-left':
+          // 右上を固定
+          fixedLeft = state.startCropLeft + state.startCropWidth - clampedSize;
+          fixedTop = state.startCropTop;
+          break;
+        case 'bottom-right':
+          // 左上を固定
+          fixedLeft = state.startCropLeft;
+          fixedTop = state.startCropTop;
+          break;
+      }
 
       // 拡大方向（切り抜き箇所を小さく）か縮小方向（切り抜き箇所を大きく）か
       const isZoomingIn = clampedSize < state.startCropWidth;
 
+      // 最大ズームに達している場合、これ以上縮める操作を無効化
+      const maxScale = INITIAL_SCALE * 5;
+      if (isZoomingIn && state.scale >= maxScale) {
+        // 最大ズーム時は縮める操作を受け付けない
+        return;
+      }
+
       if (isZoomingIn) {
-        // 拡大方向: マウスアップ後に適用（プレビューなし）
+        // 拡大方向: クロップ領域だけを縮める（画像は変化なし）
+        cropAreaState.width = clampedSize;
+        cropAreaState.height = clampedSize;
+        cropAreaState.left = fixedLeft;
+        cropAreaState.top = fixedTop;
+
+        // transitionを無効にして同期
+        cropArea.style.transition = 'none';
+        gridOverlay.style.transition = 'none';
+
+        cropArea.style.width = `${clampedSize}px`;
+        cropArea.style.height = `${clampedSize}px`;
+        cropArea.style.left = `${fixedLeft}px`;
+        cropArea.style.top = `${fixedTop}px`;
+
+        // グリッド線もクロップ領域と同じサイズ・位置に調整
+        gridOverlay.style.width = `${clampedSize}px`;
+        gridOverlay.style.height = `${clampedSize}px`;
+        gridOverlay.style.left = `${fixedLeft}px`;
+        gridOverlay.style.top = `${fixedTop}px`;
+
+        // マウスアップ時に適用するため保存
         state.pendingCropSize = {
           width: clampedSize,
           height: clampedSize,
-          left: centerAdjustLeft,
-          top: centerAdjustTop,
+          left: fixedLeft,
+          top: fixedTop,
         };
       } else {
         // 縮小方向: リアルタイムプレビュー
-        applyCropResize(clampedSize, clampedSize, centerAdjustLeft, centerAdjustTop);
+        applyCropResize(clampedSize, clampedSize, fixedLeft, fixedTop);
       }
     });
 
@@ -759,14 +816,125 @@
       state.isResizing = false;
       gridOverlay.classList.remove('visible');
 
+      // transitionを再有効化
+      cropArea.style.transition = '';
+      gridOverlay.style.transition = '';
+
       // 拡大方向の場合、ここで適用
       if (state.pendingCropSize) {
-        applyCropResize(
-          state.pendingCropSize.width,
-          state.pendingCropSize.height,
-          state.pendingCropSize.left,
-          state.pendingCropSize.top
-        );
+        console.log('=== ピンチズーム開始 ===');
+        console.log('現在のスケール:', state.scale);
+        console.log('縮んだクロップサイズ:', state.pendingCropSize.width);
+        console.log('元のクロップサイズ:', state.startCropWidth);
+
+        // 画像の中心座標（natural size）
+        const imageCenterX = IMAGE_WIDTH / 2;
+        const imageCenterY = IMAGE_HEIGHT / 2;
+
+        // 現在の total translate
+        const currentTotalTranslateX = INITIAL_TRANSLATE_X + state.x;
+        const currentTotalTranslateY = INITIAL_TRANSLATE_Y + state.y;
+
+        console.log('現在のtotal translate:', { x: currentTotalTranslateX, y: currentTotalTranslateY });
+
+        // 縮んだクロップ領域の中心座標（cropper-container座標系）
+        const shrunkenCropCenterX = state.pendingCropSize.left + state.pendingCropSize.width / 2;
+        const shrunkenCropCenterY = state.pendingCropSize.top + state.pendingCropSize.height / 2;
+
+        console.log('縮んだクロップの中心:', { x: shrunkenCropCenterX, y: shrunkenCropCenterY });
+
+        // 画像コンテナの左上座標（リサイズ開始時の位置）
+        const imageContainerLeft = state.startCropLeft;
+        const imageContainerTop = state.startCropTop;
+
+        // 縮んだクロップ領域の中心から画像コンテナの左上までの距離（画像コンテナ座標系）
+        const offsetX = shrunkenCropCenterX - imageContainerLeft;
+        const offsetY = shrunkenCropCenterY - imageContainerTop;
+
+        console.log('画像コンテナからのオフセット:', { x: offsetX, y: offsetY });
+
+        // 画像上の座標（natural size）
+        const imageX = (offsetX - imageCenterX - currentTotalTranslateX) / state.scale + imageCenterX;
+        const imageY = (offsetY - imageCenterY - currentTotalTranslateY) / state.scale + imageCenterY;
+
+        console.log('縮んだクロップ中心が見ている画像座標:', { x: imageX, y: imageY });
+
+        // クロップ領域を元のサイズに戻す
+        const originalSize = state.startCropWidth;
+        const originalLeft = state.startCropLeft;
+        const originalTop = state.startCropTop;
+
+        cropAreaState.width = originalSize;
+        cropAreaState.height = originalSize;
+        cropAreaState.left = originalLeft;
+        cropAreaState.top = originalTop;
+
+        cropArea.style.width = `${originalSize}px`;
+        cropArea.style.height = `${originalSize}px`;
+        cropArea.style.left = `${originalLeft}px`;
+        cropArea.style.top = `${originalTop}px`;
+
+        // グリッド線も元のサイズに戻す
+        gridOverlay.style.width = `${originalSize}px`;
+        gridOverlay.style.height = `${originalSize}px`;
+        gridOverlay.style.left = `${originalLeft}px`;
+        gridOverlay.style.top = `${originalTop}px`;
+
+        // 画像コンテナも元の位置に戻す
+        imageContainer.style.left = `${originalLeft}px`;
+        imageContainer.style.top = `${originalTop}px`;
+        imageContainer.style.width = `${originalSize}px`;
+        imageContainer.style.height = `${originalSize}px`;
+
+        // 画像のスケールを調整
+        const zoomRatio = state.startCropWidth / state.pendingCropSize.width;
+        const calculatedScale = state.scale * zoomRatio;
+        const maxScale = INITIAL_SCALE * 5;
+        const newScale = Math.max(INITIAL_SCALE, Math.min(calculatedScale, maxScale));
+
+        console.log('ズーム倍率:', zoomRatio);
+        console.log('新しいスケール（計算値）:', calculatedScale);
+        console.log('新しいスケール（clamp後）:', newScale);
+        console.log('最大スケール（INITIAL_SCALE * 5）:', maxScale);
+
+        // スケールが上限に達している場合はピンチズームを無効化
+        if (calculatedScale > maxScale && state.scale >= maxScale) {
+          console.log('⚠️ スケールが上限（INITIAL_SCALE × 5倍）に達しているため、これ以上のズームは無効');
+          console.log('=== ピンチズーム完了（スキップ） ===\n');
+          state.pendingCropSize = null;
+          return;
+        }
+
+        // 元のクロップ領域の中心座標
+        const newCropCenterX = originalSize / 2;
+        const newCropCenterY = originalSize / 2;
+
+        console.log('クロップ領域の中心:', { x: newCropCenterX, y: newCropCenterY });
+        console.log('現在のINITIAL_TRANSLATE:', { x: INITIAL_TRANSLATE_X, y: INITIAL_TRANSLATE_Y });
+
+        // 元のクロップ領域の中心が imageX, imageY を見るように translate を調整
+        const newTotalTranslateX = newCropCenterX - imageCenterX - (imageX - imageCenterX) * newScale;
+        const newTotalTranslateY = newCropCenterY - imageCenterY - (imageY - imageCenterY) * newScale;
+
+        console.log('新しいtotal translate:', { x: newTotalTranslateX, y: newTotalTranslateY });
+
+        // state に戻す
+        state.x = newTotalTranslateX - INITIAL_TRANSLATE_X;
+        state.y = newTotalTranslateY - INITIAL_TRANSLATE_Y;
+        state.scale = newScale;
+
+        console.log('clamp前のstate:', { x: state.x, y: state.y, scale: state.scale });
+
+        // ドラッグ範囲を制限
+        const clamped = clampTranslate(state.x, state.y);
+        state.x = clamped.x;
+        state.y = clamped.y;
+
+        console.log('clamp後のstate:', { x: state.x, y: state.y, scale: state.scale });
+        console.log('=== ピンチズーム完了 ===\n');
+
+        applyTransform(true);
+
         state.pendingCropSize = null;
       }
     });
@@ -784,6 +952,12 @@
       cropArea.style.left = `${newLeft}px`;
       cropArea.style.top = `${newTop}px`;
 
+      // グリッド線もクロップ領域と同期
+      gridOverlay.style.width = `${newWidth}px`;
+      gridOverlay.style.height = `${newHeight}px`;
+      gridOverlay.style.left = `${newLeft}px`;
+      gridOverlay.style.top = `${newTop}px`;
+
       // 画像コンテナの位置もクロップ領域と同期
       imageContainer.style.left = `${newLeft}px`;
       imageContainer.style.top = `${newTop}px`;
@@ -795,6 +969,9 @@
       const newInitialScale = newWidth / minDimension;
       const scaleRatio = newInitialScale / INITIAL_SCALE;
 
+      // 現在の相対拡大率を計算（INITIAL_SCALEに対する倍率）
+      const currentZoomRatio = state.scale / INITIAL_SCALE;
+
       // 新しい初期配置を計算（transform-origin: 50% 50% の場合）
       const imageCenterX = IMAGE_WIDTH / 2;
       const imageCenterY = IMAGE_HEIGHT / 2;
@@ -805,7 +982,8 @@
       INITIAL_TRANSLATE_Y = containerCenterY - imageCenterY;
       INITIAL_SCALE = newInitialScale;
 
-      state.scale = newInitialScale;
+      // 相対拡大率を保持したまま、新しいstate.scaleを計算
+      state.scale = INITIAL_SCALE * currentZoomRatio;
 
       // スケール変更に応じて translate を調整（相対的な位置を保つ）
       const newX = state.x * scaleRatio;
@@ -827,6 +1005,12 @@
       cropArea.style.height = `${CROP_AREA_INITIAL.height}px`;
       cropArea.style.left = `${CROP_AREA_INITIAL.left}px`;
       cropArea.style.top = `${CROP_AREA_INITIAL.top}px`;
+
+      // グリッド線もリセット
+      gridOverlay.style.width = `${CROP_AREA_INITIAL.width}px`;
+      gridOverlay.style.height = `${CROP_AREA_INITIAL.height}px`;
+      gridOverlay.style.left = `${CROP_AREA_INITIAL.left}px`;
+      gridOverlay.style.top = `${CROP_AREA_INITIAL.top}px`;
 
       // 画像コンテナもリセット
       imageContainer.style.left = `${CROP_AREA_INITIAL.left}px`;
