@@ -384,6 +384,8 @@
     const cropperImage = document.getElementById('cropperImage');
     const gridOverlay = document.getElementById('gridOverlay');
     const cropArea = document.getElementById('cropArea');
+    const cropMask = document.getElementById('cropMask');
+    const maskCircle = cropMask.querySelector('circle');
     const rotateBtn = document.getElementById('rotateBtn');
     const resetBtn = document.getElementById('resetBtn');
     const verticalBtn = document.getElementById('verticalBtn');
@@ -433,6 +435,17 @@
 
     // 現在のクロップ領域（可変）
     let cropAreaState = { ...CROP_AREA_INITIAL };
+
+    // SVGマスクの円をクロップ領域に合わせて更新する関数
+    function updateSVGMask() {
+      const cx = cropAreaState.left + cropAreaState.width / 2;
+      const cy = cropAreaState.top + cropAreaState.height / 2;
+      const r = cropAreaState.width / 2;
+
+      maskCircle.setAttribute('cx', cx);
+      maskCircle.setAttribute('cy', cy);
+      maskCircle.setAttribute('r', r);
+    }
 
     // 画像の元のサイズ
     let IMAGE_WIDTH = 800;
@@ -488,6 +501,7 @@
 
       applyTransform(false);
       updateDebugInfo();
+      updateSVGMask(); // SVGマスクを初期位置に同期
     });
 
     // Transform を適用
@@ -1004,6 +1018,7 @@
       state.y = clamped.y;
 
       applyTransform(true);
+      updateSVGMask(); // SVGマスクをリサイズ後のクロップ領域に同期
     }
 
     // リセットボタン
@@ -1047,6 +1062,7 @@
       state.rotation = 0;
 
       applyTransform(true);
+      updateSVGMask(); // SVGマスクをリセット後のクロップ領域に同期
     });
 
     // 画像切り替え関数（ローディング表示あり）

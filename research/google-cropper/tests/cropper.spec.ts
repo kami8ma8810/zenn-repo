@@ -554,5 +554,42 @@ test.describe('Google式クロッパー デモ', () => {
       expect(borderStyle.borderBottomColor).toBe('rgb(255, 255, 255)');
       expect(borderStyle.borderLeftColor).toBe('rgb(255, 255, 255)');
     });
+
+    test('SVGマスクの円がクロップ領域の位置とサイズに連動する', async ({ page }) => {
+      const container = page.locator('#cropperContainer');
+      const cropArea = page.locator('#cropArea');
+      const maskCircle = page.locator('#cropMask circle');
+
+      await cropArea.waitFor({ state: 'visible' });
+      // maskCircle は mask 内の要素なので visible にはならないため、waitFor は不要
+
+      // コンテナとクロップ領域のサイズと位置を取得
+      const containerBbox = await container.boundingBox();
+      const cropAreaBbox = await cropArea.boundingBox();
+      if (!containerBbox) throw new Error('Container bounding box not found');
+      if (!cropAreaBbox) throw new Error('Crop area bounding box not found');
+
+      // SVG circleの属性を取得
+      const circleAttrs = await maskCircle.evaluate((circle: SVGCircleElement) => ({
+        cx: parseFloat(circle.getAttribute('cx') || '0'),
+        cy: parseFloat(circle.getAttribute('cy') || '0'),
+        r: parseFloat(circle.getAttribute('r') || '0'),
+      }));
+
+      // コンテナからの相対座標を計算（SVGの座標系はコンテナ基準）
+      const relativeCropX = cropAreaBbox.x - containerBbox.x;
+      const relativeCropY = cropAreaBbox.y - containerBbox.y;
+
+      // 期待値：円の中心がクロップ領域の中心と一致（コンテナからの相対座標）
+      const expectedCx = relativeCropX + cropAreaBbox.width / 2;
+      const expectedCy = relativeCropY + cropAreaBbox.height / 2;
+      const expectedR = cropAreaBbox.width / 2;
+
+      // 円の中心座標がクロップ領域の中心と一致（±2pxの誤差許容）
+      expect(Math.abs(circleAttrs.cx - expectedCx)).toBeLessThan(2);
+      expect(Math.abs(circleAttrs.cy - expectedCy)).toBeLessThan(2);
+      // 円の半径がクロップ領域の半径と一致（±2pxの誤差許容）
+      expect(Math.abs(circleAttrs.r - expectedR)).toBeLessThan(2);
+    });
   });
 });
