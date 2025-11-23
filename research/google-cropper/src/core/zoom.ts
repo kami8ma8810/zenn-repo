@@ -37,7 +37,7 @@ export const detectEdges = (
  * エッジアンカリングズームのtranslate値を計算
  *
  * 画像が端にいる場合、その端を固定したままズームする。
- * 長辺方向のみエッジ固定、短辺方向は中央固定。
+ * 角にいる場合は角を固定、辺にいる場合は長辺方向のみエッジ固定。
  *
  * @param imageSize - 画像のサイズ
  * @param cropAreaSize - クロップ領域のサイズ
@@ -74,32 +74,37 @@ export const calculateZoomTransform = (
   const isVertical = orientation === 'vertical';
   const isHorizontal = orientation === 'horizontal';
 
+  // 角にいるかどうかを判定
+  // 左右どちらか一方のみ、かつ上下どちらか一方のみが接している場合に角と判定
+  // 例: 縦長画像で下端の場合、左右両方が接しているので角ではない
+  const atCorner = (edges.atLeftEdge !== edges.atRightEdge) && (edges.atTopEdge !== edges.atBottomEdge);
+
   // X方向の新しいtranslate値を計算
-  let newTotalTranslateX: number;
-  if (isHorizontal && edges.atLeftEdge) {
-    // 左端固定: 画像の左端座標 = imageCenterX + totalTranslateX - IMAGE_WIDTH/2 * scale を一定に保つ
+  // 基本: 画像中心と切り取り部分の中心の差分を維持してズーム
+  const currentImageX = (containerCenterX - imageCenterX - currentTotalTranslateX) / currentScale + imageCenterX;
+  let newTotalTranslateX = containerCenterX - imageCenterX - (currentImageX - imageCenterX) * newScale;
+
+  // 上書き: 片方のみエッジに接している場合のみエッジ固定
+  if (edges.atLeftEdge && !edges.atRightEdge) {
+    // 左端のみ接している → 左端固定
     newTotalTranslateX = currentTotalTranslateX + imageSize.width / 2 * (newScale - currentScale);
-  } else if (isHorizontal && edges.atRightEdge) {
-    // 右端固定: 画像の右端座標 = imageCenterX + totalTranslateX + IMAGE_WIDTH/2 * scale を一定に保つ
+  } else if (edges.atRightEdge && !edges.atLeftEdge) {
+    // 右端のみ接している → 右端固定
     newTotalTranslateX = currentTotalTranslateX + imageSize.width / 2 * (currentScale - newScale);
-  } else {
-    // 中央固定: クロップ中心が見ている画像上のX座標を固定
-    const currentImageX = (containerCenterX - imageCenterX - currentTotalTranslateX) / currentScale + imageCenterX;
-    newTotalTranslateX = containerCenterX - imageCenterX - (currentImageX - imageCenterX) * newScale;
   }
 
   // Y方向の新しいtranslate値を計算
-  let newTotalTranslateY: number;
-  if (isVertical && edges.atTopEdge) {
-    // 上端固定: 画像の上端座標 = imageCenterY + totalTranslateY - IMAGE_HEIGHT/2 * scale を一定に保つ
+  // 基本: 画像中心と切り取り部分の中心の差分を維持してズーム
+  const currentImageY = (containerCenterY - imageCenterY - currentTotalTranslateY) / currentScale + imageCenterY;
+  let newTotalTranslateY = containerCenterY - imageCenterY - (currentImageY - imageCenterY) * newScale;
+
+  // 上書き: 片方のみエッジに接している場合のみエッジ固定
+  if (edges.atTopEdge && !edges.atBottomEdge) {
+    // 上端のみ接している → 上端固定
     newTotalTranslateY = currentTotalTranslateY + imageSize.height / 2 * (newScale - currentScale);
-  } else if (isVertical && edges.atBottomEdge) {
-    // 下端固定: 画像の下端座標 = imageCenterY + totalTranslateY + IMAGE_HEIGHT/2 * scale を一定に保つ
+  } else if (edges.atBottomEdge && !edges.atTopEdge) {
+    // 下端のみ接している → 下端固定
     newTotalTranslateY = currentTotalTranslateY + imageSize.height / 2 * (currentScale - newScale);
-  } else {
-    // 中央固定: クロップ中心が見ている画像上のY座標を固定
-    const currentImageY = (containerCenterY - imageCenterY - currentTotalTranslateY) / currentScale + imageCenterY;
-    newTotalTranslateY = containerCenterY - imageCenterY - (currentImageY - imageCenterY) * newScale;
   }
 
   // state に戻す（INITIAL_TRANSLATE を引く）
