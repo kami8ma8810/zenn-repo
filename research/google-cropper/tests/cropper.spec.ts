@@ -591,5 +591,93 @@ test.describe('Google式クロッパー デモ', () => {
       // 円の半径がクロップ領域の半径と一致（±2pxの誤差許容）
       expect(Math.abs(circleAttrs.r - expectedR)).toBeLessThan(2);
     });
+
+    test('リサイズハンドルをドラッグしている最中も、SVGマスクの円がリアルタイムで更新される', async ({ page }) => {
+      const container = page.locator('#cropperContainer');
+      const cropArea = page.locator('#cropArea');
+      const maskCircle = page.locator('#cropMask circle');
+      const resizeHandle = page.locator('.resize-handle.bottom-right');
+
+      await cropArea.waitFor({ state: 'visible' });
+
+      // 初期状態のクロップ領域とSVG円の情報を取得
+      const containerBbox = await container.boundingBox();
+      const initialCropAreaBbox = await cropArea.boundingBox();
+      if (!containerBbox) throw new Error('Container bounding box not found');
+      if (!initialCropAreaBbox) throw new Error('Initial crop area bounding box not found');
+
+      const initialCircleAttrs = await maskCircle.evaluate((circle: SVGCircleElement) => ({
+        cx: parseFloat(circle.getAttribute('cx') || '0'),
+        cy: parseFloat(circle.getAttribute('cy') || '0'),
+        r: parseFloat(circle.getAttribute('r') || '0'),
+      }));
+
+      // リサイズハンドル（右下）をドラッグして縮める（拡大方向 = isZoomingIn = true）
+      const handleBbox = await resizeHandle.boundingBox();
+      if (!handleBbox) throw new Error('Handle bounding box not found');
+
+      await page.mouse.move(handleBbox.x + handleBbox.width / 2, handleBbox.y + handleBbox.height / 2);
+      await page.mouse.down();
+
+      // ドラッグ中の位置（内側に-100px移動）
+      await page.mouse.move(
+        handleBbox.x + handleBbox.width / 2 - 100,
+        handleBbox.y + handleBbox.height / 2 - 100,
+        { steps: 5 } // 複数ステップでドラッグ
+      );
+
+      // ドラッグ中のクロップ領域とSVG円の情報を取得
+      const duringDragCropAreaBbox = await cropArea.boundingBox();
+      if (!duringDragCropAreaBbox) throw new Error('Crop area bounding box not found during drag');
+
+      const duringDragCircleAttrs = await maskCircle.evaluate((circle: SVGCircleElement) => ({
+        cx: parseFloat(circle.getAttribute('cx') || '0'),
+        cy: parseFloat(circle.getAttribute('cy') || '0'),
+        r: parseFloat(circle.getAttribute('r') || '0'),
+      }));
+
+      // ドラッグ中のクロップ領域の情報（コンテナ基準）
+      const relativeCropX = duringDragCropAreaBbox.x - containerBbox.x;
+      const relativeCropY = duringDragCropAreaBbox.y - containerBbox.y;
+      const expectedCx = relativeCropX + duringDragCropAreaBbox.width / 2;
+      const expectedCy = relativeCropY + duringDragCropAreaBbox.height / 2;
+      const expectedR = duringDragCropAreaBbox.width / 2;
+
+      console.log('During drag - Crop area bbox:', duringDragCropAreaBbox);
+      console.log('During drag - Circle attrs:', duringDragCircleAttrs);
+      console.log('During drag - Expected:', { cx: expectedCx, cy: expectedCy, r: expectedR });
+
+      // ドラッグ中に円がリアルタイムで更新されていることを確認
+      // 初期状態と異なっていること
+      expect(duringDragCircleAttrs.r).not.toBe(initialCircleAttrs.r);
+
+      // ドラッグ中の円の位置・サイズがクロップ領域に連動していること
+      expect(Math.abs(duringDragCircleAttrs.cx - expectedCx)).toBeLessThan(2);
+      expect(Math.abs(duringDragCircleAttrs.cy - expectedCy)).toBeLessThan(2);
+      expect(Math.abs(duringDragCircleAttrs.r - expectedR)).toBeLessThan(2);
+
+      // マウスアップ
+      await page.mouse.up();
+      await page.waitForTimeout(200); // transitionが完了するのを待つ
+
+      // マウスアップ後の状態を確認（クロップ領域が元のサイズに戻り、画像がズームされる）
+      const afterMouseUpCropAreaBbox = await cropArea.boundingBox();
+      const afterMouseUpCircleAttrs = await maskCircle.evaluate((circle: SVGCircleElement) => ({
+        cx: parseFloat(circle.getAttribute('cx') || '0'),
+        cy: parseFloat(circle.getAttribute('cy') || '0'),
+        r: parseFloat(circle.getAttribute('r') || '0'),
+      }));
+
+      console.log('After mouseup - Crop area bbox:', afterMouseUpCropAreaBbox);
+      console.log('After mouseup - Circle attrs:', afterMouseUpCircleAttrs);
+
+      // マウスアップ後はクロップ領域が元のサイズに戻っているはず
+      if (!afterMouseUpCropAreaBbox) throw new Error('Crop area bounding box not found after mouseup');
+      expect(Math.abs(afterMouseUpCropAreaBbox.width - initialCropAreaBbox.width)).toBeLessThan(2);
+      expect(Math.abs(afterMouseUpCropAreaBbox.height - initialCropAreaBbox.height)).toBeLessThan(2);
+
+      // マウスアップ後の円も初期状態と同じサイズに戻っているはず
+      expect(Math.abs(afterMouseUpCircleAttrs.r - initialCircleAttrs.r)).toBeLessThan(2);
+    });
   });
 });

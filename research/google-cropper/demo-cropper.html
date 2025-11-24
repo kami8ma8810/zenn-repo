@@ -826,6 +826,9 @@
           left: fixedLeft,
           top: fixedTop,
         };
+
+        // ⭐ SVGマスクの円もリアルタイムで更新
+        updateSVGMask();
       } else {
         // 縮小方向: リアルタイムプレビュー
         applyCropResize(clampedSize, clampedSize, fixedLeft, fixedTop);
@@ -924,6 +927,7 @@
         if (calculatedScale > maxScale && state.scale >= maxScale) {
           console.log('⚠️ スケールが上限（INITIAL_SCALE × 5倍）に達しているため、これ以上のズームは無効');
           console.log('=== ピンチズーム完了（スキップ） ===\n');
+          updateSVGMask(); // ⭐ クロップ領域を元のサイズに戻したので、SVGマスクも更新
           state.pendingCropSize = null;
           return;
         }
@@ -957,6 +961,7 @@
         console.log('=== ピンチズーム完了 ===\n');
 
         applyTransform(true);
+        updateSVGMask(); // ⭐ クロップ領域を元のサイズに戻したので、SVGマスクも更新
 
         state.pendingCropSize = null;
       }
