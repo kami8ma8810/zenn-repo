@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>X Clipper for Obsidian</title>
+  <link rel="stylesheet" href="./popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- ヘッダー -->
+    <header class="header">
+      <h1 class="title" data-i18n="popupTitle">ポストを保存</h1>
+      <button type="button" class="settings-btn" id="settingsBtn" aria-label="設定">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+      </button>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="main">
+      <!-- 接続ステータス -->
+      <div class="status" id="connectionStatus" role="status" aria-live="polite">
+        <span class="status-dot" id="statusDot"></span>
+        <span class="status-text" id="statusText">接続確認中...</span>
+      </div>
+
+      <!-- 接続設定（未接続時のみ表示） -->
+      <div class="settings-section" id="settingsSection" hidden>
+        <!-- API URL -->
+        <div class="form-group">
+          <label for="apiUrlInput" class="label">API URL</label>
+          <input
+            type="url"
+            id="apiUrlInput"
+            class="input"
+            placeholder="http://127.0.0.1:27123"
+            autocomplete="off"
+          >
+          <p class="hint-text">Obsidian Local REST API の URL</p>
+        </div>
+
+        <!-- APIキー -->
+        <div class="form-group">
+          <label for="apiKeyInput" class="label">API Key</label>
+          <input
+            type="password"
+            id="apiKeyInput"
+            class="input"
+            placeholder="APIキーを入力..."
+            autocomplete="off"
+          >
+          <p class="hint-text">Obsidian → 設定 → Local REST API → API Key</p>
+        </div>
+
+        <!-- 接続テストボタン -->
+        <button type="button" id="testConnectionBtn" class="btn btn-small">
+          接続テスト
+        </button>
+        <p class="connection-result" id="connectionResult" role="status" aria-live="polite"></p>
+      </div>
+
+      <!-- URL入力 -->
+      <div class="form-group">
+        <label for="urlInput" class="label" data-i18n="urlPlaceholder">ポストのURL</label>
+        <input
+          type="url"
+          id="urlInput"
+          class="input"
+          placeholder="https://x.com/..."
+          autocomplete="off"
+        >
+        <p class="error-text" id="urlError" role="alert" aria-live="assertive"></p>
+      </div>
+
+      <!-- フォルダ選択 -->
+      <div class="form-group">
+        <label for="folderSelect" class="label" data-i18n="folderLabel">保存先フォルダ</label>
+        <select id="folderSelect" class="select">
+          <option value="X Clipper">X Clipper</option>
+        </select>
+      </div>
+
+      <!-- 保存ボタン -->
+      <button
+        type="button"
+        id="saveBtn"
+        class="btn btn-primary"
+        disabled
+      >
+        <span class="btn-text" data-i18n="saveButton">保存</span>
+        <span class="btn-loading" hidden>
+          <svg class="spinner" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="31.4 31.4" transform="rotate(-90 12 12)"/>
+          </svg>
+        </span>
+      </button>
+
+      <!-- 結果メッセージ -->
+      <div class="result" id="result" role="status" aria-live="polite" hidden>
+        <p class="result-text" id="resultText"></p>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="./popup.ts"></script>
+</body>
+</html>

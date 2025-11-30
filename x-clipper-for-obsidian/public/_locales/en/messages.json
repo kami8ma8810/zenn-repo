@@ -1,0 +1,50 @@
+{
+  "extName": {
+    "message": "X Clipper for Obsidian",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "Save X(Twitter) posts to Obsidian",
+    "description": "Extension description"
+  },
+  "popupTitle": {
+    "message": "Save Post",
+    "description": "Popup title"
+  },
+  "urlPlaceholder": {
+    "message": "Enter post URL...",
+    "description": "URL input placeholder"
+  },
+  "folderLabel": {
+    "message": "Save to folder",
+    "description": "Folder selection label"
+  },
+  "saveButton": {
+    "message": "Save",
+    "description": "Save button text"
+  },
+  "saving": {
+    "message": "Saving...",
+    "description": "Saving state text"
+  },
+  "saveSuccess": {
+    "message": "Saved successfully!",
+    "description": "Success message"
+  },
+  "saveError": {
+    "message": "Failed to save",
+    "description": "Error message"
+  },
+  "invalidUrl": {
+    "message": "Please enter a valid X/Twitter URL",
+    "description": "Invalid URL error"
+  },
+  "obsidianNotConnected": {
+    "message": "Cannot connect to Obsidian. Please make sure Obsidian is running.",
+    "description": "Obsidian connection error"
+  },
+  "settings": {
+    "message": "Settings",
+    "description": "Settings link text"
+  }
+}

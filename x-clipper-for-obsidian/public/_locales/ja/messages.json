@@ -1,0 +1,50 @@
+{
+  "extName": {
+    "message": "X Clipper for Obsidian",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "X(Twitter)のポストをObsidianに保存します",
+    "description": "Extension description"
+  },
+  "popupTitle": {
+    "message": "ポストを保存",
+    "description": "Popup title"
+  },
+  "urlPlaceholder": {
+    "message": "ポストのURLを入力...",
+    "description": "URL input placeholder"
+  },
+  "folderLabel": {
+    "message": "保存先フォルダ",
+    "description": "Folder selection label"
+  },
+  "saveButton": {
+    "message": "保存",
+    "description": "Save button text"
+  },
+  "saving": {
+    "message": "保存中...",
+    "description": "Saving state text"
+  },
+  "saveSuccess": {
+    "message": "保存しました！",
+    "description": "Success message"
+  },
+  "saveError": {
+    "message": "保存に失敗しました",
+    "description": "Error message"
+  },
+  "invalidUrl": {
+    "message": "有効なX/TwitterのURLを入力してください",
+    "description": "Invalid URL error"
+  },
+  "obsidianNotConnected": {
+    "message": "Obsidianに接続できません。Obsidianが起動しているか確認してください。",
+    "description": "Obsidian connection error"
+  },
+  "settings": {
+    "message": "設定",
+    "description": "Settings link text"
+  }
+}
