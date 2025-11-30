@@ -1,7 +1,7 @@
 import { getSettings } from '@/lib/storage'
-import { fetchTweetViaOEmbed, formatTweetAsMarkdown, generateFileName } from '@/lib/tweet-parser'
+import { fetchTweetViaOEmbed, formatTweetAsMarkdown, formatThreadAsMarkdown, generateFileName, generateThreadFileName } from '@/lib/tweet-parser'
 import { createNote, getUniqueFilePath, downloadImage, saveImage, getImageExtension } from '@/lib/obsidian-api'
-import type { MessageType, TweetData } from '@/types'
+import type { MessageType, TweetData, ThreadData, ThreadExtractionResult } from '@/types'
 
 /** Content Script から返される画像データ */
 interface TweetImageData {
@@ -30,6 +30,20 @@ chrome.runtime.onMessage.addListener((
       })
 
     // 非同期レスポンスを返すため true を返す
+    return true
+  }
+
+  if (message.type === 'SAVE_THREAD') {
+    handleSaveThread(message.data.url, message.data.folder, message.data.tags)
+      .then(notePath => sendResponse({ success: true, notePath }))
+      .catch(error => {
+        console.error('Failed to save thread:', error)
+        sendResponse({
+          success: false,
+          error: error instanceof Error ? error.message : 'スレッドの保存に失敗しました',
+        })
+      })
+
     return true
   }
 })
@@ -129,6 +143,173 @@ async function handleSaveTweet(url: string, folder: string, tags: string[]): Pro
   const basePath = `${noteFolder}/${fileName}`
 
   // 重複しないファイルパスを取得
+  const filePath = await getUniqueFilePath(basePath, settings)
+
+  // Obsidianに保存
+  await createNote(filePath, markdown, settings)
+
+  return filePath
+}
+
+/**
+ * バックグラウンドタブを開いてスレッドデータを取得
+ */
+async function getThreadFromBackgroundTab(url: string): Promise<ThreadData | null> {
+  let tabId: number | null = null
+
+  try {
+    // バックグラウンドでタブを作成
+    const tab = await chrome.tabs.create({ url, active: false })
+    tabId = tab.id ?? null
+
+    if (!tabId) {
+      throw new Error('Failed to create tab')
+    }
+
+    // ページの読み込み完了を待つ
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('Page load timeout'))
+      }, 30000) // 30秒タイムアウト
+
+      const listener = (changedTabId: number, changeInfo: { status?: string }) => {
+        if (changedTabId === tabId && changeInfo.status === 'complete') {
+          clearTimeout(timeout)
+          chrome.tabs.onUpdated.removeListener(listener)
+          resolve()
+        }
+      }
+
+      chrome.tabs.onUpdated.addListener(listener)
+    })
+
+    // 少し待ってからDOMが安定するのを待つ
+    await new Promise(resolve => setTimeout(resolve, 2000))
+
+    // Content Scriptにメッセージを送信してスレッドを取得
+    const result = await chrome.tabs.sendMessage(tabId, { type: 'GET_THREAD_DATA' }) as ThreadExtractionResult
+
+    if (!result.success || !result.thread) {
+      throw new Error(result.error ?? 'Failed to extract thread')
+    }
+
+    return result.thread
+  } finally {
+    // タブを閉じる
+    if (tabId) {
+      try {
+        await chrome.tabs.remove(tabId)
+      } catch {
+        // タブが既に閉じられている場合は無視
+      }
+    }
+  }
+}
+
+/**
+ * スレッドの画像を保存
+ * @returns ツイートIDごとの保存済みファイル名マップ
+ */
+async function saveThreadImagesToObsidian(
+  thread: ThreadData,
+  folder: string
+): Promise<Map<string, string[]>> {
+  const settings = await getSettings()
+  const savedImageMap = new Map<string, string[]>()
+
+  for (const tweet of thread.tweets) {
+    const savedImages: string[] = []
+
+    for (let i = 0; i < tweet.images.length; i++) {
+      const imageUrl = tweet.images[i]
+      try {
+        const imageBlob = await downloadImage(imageUrl)
+        const ext = getImageExtension(imageUrl, imageBlob.type)
+        const imageFileName = `tweet-${tweet.id}-${i + 1}.${ext}`
+        const imagePath = `${folder}/${imageFileName}`
+        await saveImage(imagePath, imageBlob, settings)
+        savedImages.push(imageFileName)
+      } catch (error) {
+        console.error(`Failed to save image:`, error)
+        // 失敗した場合はプレースホルダーを追加
+        savedImages.push(`tweet-${tweet.id}-${i + 1}.jpg`)
+      }
+    }
+
+    if (savedImages.length > 0) {
+      savedImageMap.set(tweet.id, savedImages)
+    }
+  }
+
+  return savedImageMap
+}
+
+/**
+ * 現在アクティブなタブからスレッドデータを取得
+ */
+async function getThreadFromActiveTab(): Promise<ThreadData | null> {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+    if (!tab?.id) return null
+
+    const result = await chrome.tabs.sendMessage(tab.id, { type: 'GET_THREAD_DATA' }) as ThreadExtractionResult
+
+    if (!result.success || !result.thread) {
+      console.error('Failed to get thread from active tab:', result.error)
+      return null
+    }
+
+    return result.thread
+  } catch (error) {
+    console.error('Failed to get thread from active tab:', error)
+    return null
+  }
+}
+
+/**
+ * スレッドを保存
+ */
+async function handleSaveThread(url: string, folder: string, tags: string[]): Promise<string> {
+  const settings = await getSettings()
+
+  // 現在アクティブなタブからスレッドを取得
+  let thread = await getThreadFromActiveTab()
+
+  // アクティブタブから取得できなかった場合はバックグラウンドタブで再取得
+  if (!thread || thread.tweets.length === 0) {
+    thread = await getThreadFromBackgroundTab(url)
+  }
+
+  if (!thread || thread.tweets.length === 0) {
+    throw new Error('スレッドを取得できませんでした')
+  }
+
+  // 1件のみの場合は単一ツイートとして保存
+  if (thread.tweets.length === 1) {
+    return handleSaveTweet(url, folder, tags)
+  }
+
+  // ファイル名を生成
+  const fileName = generateThreadFileName(thread)
+  const fileNameWithoutExt = fileName.replace(/\.md$/, '')
+
+  // 画像があるかチェック
+  const hasImages = thread.tweets.some(t => t.images.length > 0)
+
+  // 画像がある場合は専用フォルダを作成して保存
+  let noteFolder = folder
+  let savedImageMap: Map<string, string[]> | undefined
+
+  if (hasImages) {
+    noteFolder = `${folder}/${fileNameWithoutExt}`
+    savedImageMap = await saveThreadImagesToObsidian(thread, noteFolder)
+  }
+
+  // Markdown形式に変換（保存済み画像マップを渡す）
+  const markdown = formatThreadAsMarkdown(thread, new Date(), tags, savedImageMap)
+
+  // ファイルパスを生成
+  const basePath = `${noteFolder}/${fileName}`
   const filePath = await getUniqueFilePath(basePath, settings)
 
   // Obsidianに保存

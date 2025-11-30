@@ -75,6 +75,16 @@
         <p class="error-text" id="urlError" role="alert" aria-live="assertive"></p>
       </div>
 
+      <!-- スレッド検出 -->
+      <div class="thread-info" id="threadInfo" hidden>
+        <div class="thread-badge">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <span id="threadCount"></span>
+        </div>
+      </div>
+
       <!-- フォルダ選択 -->
       <div class="form-group">
         <label for="folderSelect" class="label" data-i18n="folderLabel">保存先フォルダ</label>

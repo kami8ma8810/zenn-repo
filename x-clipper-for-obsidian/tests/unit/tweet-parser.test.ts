@@ -3,10 +3,12 @@ import {
   extractTweetId,
   isValidTweetUrl,
   formatTweetAsMarkdown,
+  formatThreadAsMarkdown,
   extractQuotedTweetUrl,
   generateFileName,
+  generateThreadFileName,
 } from '../../src/lib/tweet-parser'
-import type { TweetData } from '../../src/types'
+import type { TweetData, ThreadData } from '../../src/types'
 
 describe('extractTweetId', () => {
   it('x.com の status URL からツイートIDを抽出できる', () => {
@@ -279,5 +281,115 @@ describe('generateFileName', () => {
     }
     const fileName = generateFileName(tweet)
     expect(fileName).toBe('tweet-1234567890.md')
+  })
+})
+
+describe('formatThreadAsMarkdown', () => {
+  const createThread = (tweets: Partial<TweetData>[]): ThreadData => ({
+    authorUsername: 'testuser',
+    authorName: 'Test User',
+    originalUrl: 'https://x.com/testuser/status/1234567890',
+    tweets: tweets.map((t, i) => ({
+      id: t.id ?? `123456789${i}`,
+      text: t.text ?? `Tweet ${i + 1}`,
+      authorUsername: t.authorUsername ?? 'testuser',
+      authorName: t.authorName ?? 'Test User',
+      url: t.url ?? `https://x.com/testuser/status/123456789${i}`,
+      images: t.images ?? [],
+    })),
+  })
+
+  it('スレッドをMarkdown形式に変換できる', () => {
+    const thread = createThread([
+      { text: '最初のツイート' },
+      { text: '2番目のツイート' },
+      { text: '3番目のツイート' },
+    ])
+    const markdown = formatThreadAsMarkdown(thread, new Date('2024-01-01T12:00:00Z'))
+
+    expect(markdown).toContain('# @testuser のスレッド')
+    expect(markdown).toContain('## 1')
+    expect(markdown).toContain('最初のツイート')
+    expect(markdown).toContain('## 2')
+    expect(markdown).toContain('2番目のツイート')
+    expect(markdown).toContain('## 3')
+    expect(markdown).toContain('3番目のツイート')
+    expect(markdown).toContain('thread_count: 3')
+  })
+
+  it('画像がある場合、savedImageMapのファイル名を使用する', () => {
+    const thread = createThread([
+      { id: 'tweet1', text: 'テキスト', images: ['http://example.com/img1.png'] },
+    ])
+    const savedImageMap = new Map<string, string[]>()
+    savedImageMap.set('tweet1', ['tweet-tweet1-1.png'])
+
+    const markdown = formatThreadAsMarkdown(thread, new Date(), undefined, savedImageMap)
+
+    expect(markdown).toContain('![[tweet-tweet1-1.png]]')
+    expect(markdown).not.toContain('.jpg')
+  })
+
+  it('savedImageMapがない場合、デフォルトのjpg拡張子を使用する', () => {
+    const thread = createThread([
+      { id: 'tweet1', text: 'テキスト', images: ['http://example.com/img1.png'] },
+    ])
+
+    const markdown = formatThreadAsMarkdown(thread, new Date())
+
+    expect(markdown).toContain('![[tweet-tweet1-1.jpg]]')
+  })
+
+  it('タグが正しく追加される', () => {
+    const thread = createThread([{ text: 'テスト' }])
+    const markdown = formatThreadAsMarkdown(thread, new Date(), ['custom-tag'])
+
+    expect(markdown).toContain('"x-clipper"')
+    expect(markdown).toContain('"x-user-testuser"')
+    expect(markdown).toContain('"custom-tag"')
+  })
+})
+
+describe('generateThreadFileName', () => {
+  it('最初のツイートの内容からファイル名を生成する', () => {
+    const thread: ThreadData = {
+      authorUsername: 'testuser',
+      authorName: 'Test User',
+      originalUrl: 'https://x.com/testuser/status/123',
+      tweets: [
+        {
+          id: '123',
+          text: 'これはテストツイートです',
+          authorUsername: 'testuser',
+          authorName: 'Test User',
+          url: 'https://x.com/testuser/status/123',
+          images: [],
+        },
+      ],
+    }
+    const fileName = generateThreadFileName(thread)
+    expect(fileName).toBe('これはテストツイートです.md')
+  })
+
+  it('20文字を超える場合は切り詰める', () => {
+    const thread: ThreadData = {
+      authorUsername: 'testuser',
+      authorName: 'Test User',
+      originalUrl: 'https://x.com/testuser/status/123',
+      tweets: [
+        {
+          id: '123',
+          text: 'これは非常に長いツイートの内容で20文字を超えています',
+          authorUsername: 'testuser',
+          authorName: 'Test User',
+          url: 'https://x.com/testuser/status/123',
+          images: [],
+        },
+      ],
+    }
+    const fileName = generateThreadFileName(thread)
+    // 「これは非常に長いツイートの内容で20文字」で20文字
+    expect(fileName).toBe('これは非常に長いツイートの内容で20文字.md')
+    expect(fileName.replace('.md', '').length).toBe(20)
   })
 })

@@ -15,6 +15,8 @@ let elements: {
   connectionResult: HTMLElement
   urlInput: HTMLInputElement
   urlError: HTMLElement
+  threadInfo: HTMLElement
+  threadCount: HTMLElement
   folderSelect: HTMLSelectElement
   tagInput: HTMLInputElement
   addTagBtn: HTMLButtonElement
@@ -31,6 +33,9 @@ let elements: {
 /** タグ管理インスタンス */
 let tagManager: TagManager
 
+/** スレッド情報 */
+let detectedThreadCount = 0
+
 function initElements(): void {
   elements = {
     connectionStatus: document.getElementById('connectionStatus')!,
@@ -43,6 +48,8 @@ function initElements(): void {
     connectionResult: document.getElementById('connectionResult')!,
     urlInput: document.getElementById('urlInput') as HTMLInputElement,
     urlError: document.getElementById('urlError')!,
+    threadInfo: document.getElementById('threadInfo')!,
+    threadCount: document.getElementById('threadCount')!,
     folderSelect: document.getElementById('folderSelect') as HTMLSelectElement,
     tagInput: document.getElementById('tagInput') as HTMLInputElement,
     addTagBtn: document.getElementById('addTagBtn') as HTMLButtonElement,
@@ -97,7 +104,7 @@ async function init(): Promise<void> {
 }
 
 /**
- * 現在のタブのURLを入力欄に設定
+ * 現在のタブのURLを入力欄に設定し、スレッドを検出
  */
 async function fillCurrentTabUrl(): Promise<void> {
   try {
@@ -105,10 +112,54 @@ async function fillCurrentTabUrl(): Promise<void> {
     if (tab?.url && isValidTweetUrl(tab.url)) {
       elements.urlInput.value = tab.url
       validateUrl()
+
+      // スレッド検出を試みる
+      if (tab.id) {
+        await detectThread(tab.id)
+      }
     }
   } catch {
     // タブ取得に失敗しても続行
   }
+}
+
+/**
+ * Content Scriptからスレッド情報を取得
+ */
+async function detectThread(tabId: number): Promise<void> {
+  try {
+    const result = await chrome.tabs.sendMessage(tabId, { type: 'GET_THREAD_DATA' }) as {
+      success: boolean
+      thread?: { tweets: unknown[] }
+      error?: string
+    }
+
+    if (result?.success && result.thread && result.thread.tweets.length > 1) {
+      detectedThreadCount = result.thread.tweets.length
+      showThreadInfo(detectedThreadCount)
+    } else {
+      hideThreadInfo()
+    }
+  } catch {
+    // Content Scriptが読み込まれていないなど
+    hideThreadInfo()
+  }
+}
+
+/**
+ * スレッド情報を表示
+ */
+function showThreadInfo(count: number): void {
+  elements.threadCount.textContent = `${count}件のスレッドが1つのノートとして保存されます`
+  elements.threadInfo.removeAttribute('hidden')
+}
+
+/**
+ * スレッド情報を非表示
+ */
+function hideThreadInfo(): void {
+  detectedThreadCount = 0
+  elements.threadInfo.setAttribute('hidden', '')
 }
 
 /**
@@ -368,15 +419,19 @@ async function handleSave(): Promise<void> {
   hideResult()
 
   try {
-    // Background Scriptにメッセージを送信
+    // スレッドが検出されていればスレッド保存、そうでなければ単一ツイート保存
+    const messageType = detectedThreadCount > 1 ? 'SAVE_THREAD' : 'SAVE_TWEET'
+
     const response = await chrome.runtime.sendMessage({
-      type: 'SAVE_TWEET',
+      type: messageType,
       data: { url, folder, tags },
     })
 
     if (response?.success) {
-      showResult('success', chrome.i18n.getMessage('saveSuccess') || '保存しました！')
-      // URLはクリアしない（同じツイートを再度保存できるように）
+      const successMessage = messageType === 'SAVE_THREAD'
+        ? `スレッド（${detectedThreadCount}件）を保存しました！`
+        : chrome.i18n.getMessage('saveSuccess') || '保存しました！'
+      showResult('success', successMessage)
     } else {
       showResult('error', response?.error || chrome.i18n.getMessage('saveError') || '保存に失敗しました')
     }

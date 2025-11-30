@@ -28,6 +28,28 @@ export interface TweetData {
   quotedTweet?: QuotedTweetData
 }
 
+/** スレッドデータの型（連投リプをまとめたもの） */
+export interface ThreadData {
+  /** 大元のツイート作者のユーザー名（@なし） */
+  authorUsername: string
+  /** 大元のツイート作者の表示名 */
+  authorName: string
+  /** スレッド内のツイート配列（時系列順） */
+  tweets: TweetData[]
+  /** 大元のツイートURL */
+  originalUrl: string
+}
+
+/** Content Scriptから返されるスレッド抽出結果 */
+export interface ThreadExtractionResult {
+  /** 成功したか */
+  success: boolean
+  /** スレッドデータ（成功時） */
+  thread?: ThreadData
+  /** エラーメッセージ（失敗時） */
+  error?: string
+}
+
 /** Obsidian保存時のオプション */
 export interface SaveOptions {
   /** 保存先フォルダパス */
@@ -59,6 +81,7 @@ export const DEFAULT_SETTINGS: ExtensionSettings = {
 /** メッセージの型（Background Script ↔ Popup間通信） */
 export type MessageType =
   | { type: 'SAVE_TWEET'; data: { url: string; folder: string; tags: string[] } }
+  | { type: 'SAVE_THREAD'; data: { url: string; folder: string; tags: string[] } }
   | { type: 'SAVE_TWEET_RESULT'; success: boolean; error?: string; notePath?: string }
   | { type: 'TEST_CONNECTION' }
   | { type: 'TEST_CONNECTION_RESULT'; connected: boolean; error?: string }

@@ -1,4 +1,4 @@
-import type { TweetData } from '@/types'
+import type { TweetData, ThreadData } from '@/types'
 
 /** ファイル名の最大文字数 */
 const MAX_FILE_NAME_LENGTH = 20
@@ -368,4 +368,113 @@ export function formatTweetAsMarkdown(
   body.push(`*保存日時: ${savedAt.toLocaleString('ja-JP')}*`)
 
   return frontmatter + body.join('\n')
+}
+
+/**
+ * スレッド（連投リプ）をMarkdown形式に変換
+ * @param thread スレッドデータ
+ * @param savedAt 保存日時
+ * @param tags タグ配列（x-clipperは自動追加される）
+ * @param savedImageMap ツイートIDごとの保存済み画像ファイル名マップ
+ */
+export function formatThreadAsMarkdown(
+  thread: ThreadData,
+  savedAt: Date = new Date(),
+  tags?: string[],
+  savedImageMap?: Map<string, string[]>
+): string {
+  const firstTweet = thread.tweets[0]
+  if (!firstTweet) {
+    throw new Error('Thread has no tweets')
+  }
+
+  // プロフィールページURL
+  const profileUrl = `https://x.com/${thread.authorUsername}`
+
+  // 最初のツイートIDからポスト日時を抽出
+  const postedAt = extractPostedAtFromTweetId(firstTweet.id)
+
+  // 全ツイートの画像数を集計
+  const totalImageCount = thread.tweets.reduce((sum, t) => sum + t.images.length, 0)
+
+  const frontmatterLines = [
+    '---',
+    `author_name: "${thread.authorName}"`,
+    `author_url: "${profileUrl}"`,
+    `thread_count: ${thread.tweets.length}`,
+    `posted_at: ${postedAt?.toISOString() ?? 'unknown'}`,
+    `saved_at: ${savedAt.toISOString()}`,
+    `original_url: ${thread.originalUrl}`,
+    `post_id: "${firstTweet.id}"`,
+  ]
+
+  // 画像がある場合
+  if (totalImageCount > 0) {
+    frontmatterLines.push(`has_images: true`)
+    frontmatterLines.push(`image_count: ${totalImageCount}`)
+  }
+
+  // タグを処理
+  const processedTags = buildTags(thread.authorUsername, tags)
+  const quotedTags = processedTags.map(tag => `"${tag}"`)
+  frontmatterLines.push(`tags: [${quotedTags.join(', ')}]`)
+  frontmatterLines.push('---')
+
+  const frontmatter = frontmatterLines.join('\n')
+
+  const body = [
+    '',
+    `# @${thread.authorUsername} のスレッド`,
+    '',
+  ]
+
+  // 各ツイートをセクションとして追加
+  thread.tweets.forEach((tweet, index) => {
+    body.push(`## ${index + 1}`)
+    body.push('')
+    body.push(tweet.text)
+    body.push('')
+
+    // 画像がある場合
+    if (tweet.images.length > 0) {
+      const savedImages = savedImageMap?.get(tweet.id) ?? []
+      tweet.images.forEach((_, imgIndex) => {
+        // 保存済みファイル名があればそれを使用、なければデフォルト
+        const fileName = savedImages[imgIndex] ?? `tweet-${tweet.id}-${imgIndex + 1}.jpg`
+        body.push(`![[${fileName}]]`)
+      })
+      body.push('')
+    }
+  })
+
+  body.push('---')
+  body.push(`*保存日時: ${savedAt.toLocaleString('ja-JP')}*`)
+
+  return frontmatter + body.join('\n')
+}
+
+/**
+ * スレッドからファイル名を生成
+ * @param thread スレッドデータ
+ * @returns ファイル名（.md拡張子付き）
+ */
+export function generateThreadFileName(thread: ThreadData): string {
+  const firstTweet = thread.tweets[0]
+  if (!firstTweet) {
+    return `thread-${Date.now()}.md`
+  }
+
+  // 最初のツイートの内容からファイル名を生成
+  const firstLine = firstTweet.text.split('\n')[0]
+  const sanitized = firstLine.replace(INVALID_FILE_NAME_CHARS, '').trim()
+
+  if (!sanitized) {
+    return `thread-${firstTweet.id}.md`
+  }
+
+  const truncated = sanitized.length <= MAX_FILE_NAME_LENGTH
+    ? sanitized
+    : sanitized.slice(0, MAX_FILE_NAME_LENGTH)
+
+  return `${truncated}.md`
 }
