@@ -69,15 +69,39 @@ describe('formatTweetAsMarkdown', () => {
     const markdown = formatTweetAsMarkdown(mockTweet)
 
     expect(markdown).toContain('---')
-    expect(markdown).toContain('author: "@testuser"')
     expect(markdown).toContain('author_name: "Test User"')
-    expect(markdown).toContain('tweet_id: "1234567890"')
+    expect(markdown).toContain('author_url: "https://x.com/testuser"')
+    expect(markdown).toContain('post_id: "1234567890"')
     expect(markdown).toContain('これはテストツイートです。')
+    // author は author_url があるため不要
+    expect(markdown).not.toMatch(/^author: /m)
   })
 
-  it('frontmatterにタグが含まれる', () => {
+  it('タグが指定されない場合はx-clipperとユーザー名（クォート付き）', () => {
     const markdown = formatTweetAsMarkdown(mockTweet)
-    expect(markdown).toContain('tags: [twitter, saved-tweet]')
+    expect(markdown).toContain('tags: ["x-clipper", "x-user-testuser"]')
+  })
+
+  it('タグが指定された場合はx-clipper、ユーザー名、入力タグと結合', () => {
+    const markdown = formatTweetAsMarkdown(mockTweet, new Date(), undefined, ['important', 'reference'])
+    expect(markdown).toContain('tags: ["x-clipper", "x-user-testuser", "important", "reference"]')
+  })
+
+  it('x-clipperが入力に含まれても重複しない', () => {
+    const markdown = formatTweetAsMarkdown(mockTweet, new Date(), undefined, ['x-clipper', 'test'])
+    expect(markdown).toContain('tags: ["x-clipper", "x-user-testuser", "test"]')
+    expect(markdown).not.toContain('"x-clipper", "x-clipper"')
+  })
+
+  it('ユーザー名が入力に含まれても重複しない', () => {
+    const markdown = formatTweetAsMarkdown(mockTweet, new Date(), undefined, ['x-user-testuser', 'test'])
+    expect(markdown).toContain('tags: ["x-clipper", "x-user-testuser", "test"]')
+    expect(markdown).not.toContain('"x-user-testuser", "x-user-testuser"')
+  })
+
+  it('空文字タグは除外される', () => {
+    const markdown = formatTweetAsMarkdown(mockTweet, new Date(), undefined, ['', 'valid', '  '])
+    expect(markdown).toContain('tags: ["x-clipper", "x-user-testuser", "valid"]')
   })
 
   it('画像がある場合はリンクが含まれる', () => {
@@ -87,6 +111,8 @@ describe('formatTweetAsMarkdown', () => {
     }
     const markdown = formatTweetAsMarkdown(tweetWithImages)
     expect(markdown).toContain('![[tweet-1234567890-1.jpg]]')
+    expect(markdown).toContain('has_images: true')
+    expect(markdown).toContain('image_count: 1')
   })
 
   it('複数の画像がある場合は連番でリンクされる', () => {
@@ -100,6 +126,29 @@ describe('formatTweetAsMarkdown', () => {
     const markdown = formatTweetAsMarkdown(tweetWithImages)
     expect(markdown).toContain('![[tweet-1234567890-1.jpg]]')
     expect(markdown).toContain('![[tweet-1234567890-2.jpg]]')
+    expect(markdown).toContain('image_count: 2')
+  })
+
+  it('プロフィールURLがfrontmatterに含まれる', () => {
+    const markdown = formatTweetAsMarkdown(mockTweet)
+    expect(markdown).toContain('author_url: "https://x.com/testuser"')
+  })
+
+  it('ポスト時間がfrontmatterに含まれる', () => {
+    const markdown = formatTweetAsMarkdown(mockTweet)
+    // ツイートID 1234567890 からポスト日時を抽出
+    expect(markdown).toContain('posted_at:')
+  })
+
+  it('ポスト時間がISO形式で出力される', () => {
+    // 実際のツイートIDを使用（2021年10月4日のツイート）
+    const tweetWithRealId: TweetData = {
+      ...mockTweet,
+      id: '1445078208190291973',
+    }
+    const markdown = formatTweetAsMarkdown(tweetWithRealId)
+    // 2021-10-04 のISO形式が含まれる
+    expect(markdown).toMatch(/posted_at: 2021-10-04T/)
   })
 
   it('引用ポストがある場合は引用セクションが含まれる', () => {
@@ -136,6 +185,31 @@ describe('extractQuotedTweetUrl', () => {
     const html = '<blockquote class="twitter-tweet"><p>通常のツイート</p></blockquote>'
     const url = extractQuotedTweetUrl(html)
     expect(url).toBeNull()
+  })
+})
+
+describe('extractPostedAtFromTweetId', () => {
+  // TwitterのツイートIDはSnowflake ID
+  // 上位ビットにタイムスタンプが埋め込まれている
+  // 参考: https://developer.twitter.com/en/docs/twitter-ids
+
+  it('ツイートIDからポスト日時を抽出できる', async () => {
+    const { extractPostedAtFromTweetId } = await import('../../src/lib/tweet-parser')
+
+    // 2021年10月4日のツイート例: 1445078208190291973
+    const date = extractPostedAtFromTweetId('1445078208190291973')
+    expect(date).toBeInstanceOf(Date)
+    // 2021年10月4日（UTC）であることを確認
+    expect(date?.getUTCFullYear()).toBe(2021)
+    expect(date?.getUTCMonth()).toBe(9) // 0-indexed, 9 = October
+    expect(date?.getUTCDate()).toBe(4)
+  })
+
+  it('無効なIDの場合はnullを返す', async () => {
+    const { extractPostedAtFromTweetId } = await import('../../src/lib/tweet-parser')
+
+    expect(extractPostedAtFromTweetId('')).toBeNull()
+    expect(extractPostedAtFromTweetId('invalid')).toBeNull()
   })
 })
 

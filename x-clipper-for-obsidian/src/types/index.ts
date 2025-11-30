@@ -58,7 +58,7 @@ export const DEFAULT_SETTINGS: ExtensionSettings = {
 
 /** メッセージの型（Background Script ↔ Popup間通信） */
 export type MessageType =
-  | { type: 'SAVE_TWEET'; data: { url: string; folder: string } }
+  | { type: 'SAVE_TWEET'; data: { url: string; folder: string; tags: string[] } }
   | { type: 'SAVE_TWEET_RESULT'; success: boolean; error?: string; notePath?: string }
   | { type: 'TEST_CONNECTION' }
   | { type: 'TEST_CONNECTION_RESULT'; connected: boolean; error?: string }

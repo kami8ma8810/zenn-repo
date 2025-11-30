@@ -10,15 +10,15 @@
 :root {
   --color-primary: #7c3aed;
   --color-primary-hover: #6d28d9;
-  --color-success: #118f65;
-  --color-error: #ef4444;
-  --color-warning: #f59e0b;
+  --color-success: #047857;
+  --color-error: #dc2626;
+  --color-warning: #b45309;
   --color-bg: #ffffff;
   --color-bg-secondary: #f3f4f6;
   --color-text: #1f2937;
   --color-text-hover: #29394f;
-  --color-text-secondary: #6b7280;
-  --color-border: #e5e7eb;
+  --color-text-secondary: #595f69;
+  --color-border: #6b7280;
   --radius: 8px;
   --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
 }
@@ -144,6 +144,15 @@ body {
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
+.select {
+  appearance: none;
+  padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  cursor: pointer;
+}
+
 .input:focus,
 .select:focus {
   outline: none;
@@ -158,13 +167,24 @@ body {
 .error-text {
   font-size: 12px;
   color: var(--color-error);
-  min-height: 18px;
+}
+
+.error-text:empty {
+  display: none;
 }
 
 .hint-text {
   font-size: 11px;
   color: var(--color-text-secondary);
   margin-top: 4px;
+}
+
+.tag-code {
+  padding: 1px 4px;
+  background-color: var(--color-bg-secondary);
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
 }
 
 /* 設定セクション */
@@ -248,13 +268,13 @@ body {
 }
 
 .btn-small {
-  background-color: var(--color-text);
-  color: var(--color-bg);
+  background-color: var(--color-primary);
+  color: white;
   font-size: 13px;
 }
 
 .btn-small:hover:not(:disabled) {
-  background-color: var(--color-text-hover);
+  background-color: var(--color-primary-hover);
 }
 
 .btn-loading {
@@ -278,25 +298,93 @@ body {
 }
 
 /* 結果メッセージ */
-.result {
-  padding: 12px;
-  border-radius: var(--radius);
-  text-align: center;
-}
-
 .result.success {
-  background-color: rgb(16 185 129 / 0.1);
   color: var(--color-success);
 }
 
 .result.error {
-  background-color: rgb(239 68 68 / 0.1);
   color: var(--color-error);
 }
 
 .result-text {
   font-size: 13px;
   font-weight: 500;
+}
+
+/* タグ入力 */
+.tag-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.tag-input {
+  flex: 1;
+}
+
+.btn-add-tag {
+  flex-shrink: 0;
+  width: auto;
+  padding: 10px 16px;
+}
+
+.tag-count {
+  font-weight: 400;
+  color: var(--color-text-secondary);
+}
+
+.tag-hint {
+  font-weight: 400;
+  color: var(--color-text-secondary);
+}
+
+/* タグリスト */
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.tag-list:empty {
+  display: none;
+}
+
+/* タグアイテム */
+.tag-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 4px 4px 8px;
+  background-color: var(--color-primary);
+  color: white;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.tag-remove-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 100%;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.tag-remove-btn:hover {
+  background-color: var(--color-bg-secondary);
+}
+
+.tag-remove-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -4px;
 }
 
 /* スクリーンリーダー専用 */

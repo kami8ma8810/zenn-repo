@@ -83,6 +83,24 @@
         </select>
       </div>
 
+      <!-- タグ入力 -->
+      <div class="form-group">
+        <label for="tagInput" class="label">タグ <span class="tag-count" id="tagCount">(0/10)</span> <span class="tag-hint">カンマ区切りで複数追加可</span></label>
+        <div class="tag-input-row">
+          <input
+            type="text"
+            id="tagInput"
+            class="input tag-input"
+            placeholder="タグを入力"
+            autocomplete="off"
+            maxlength="50"
+          >
+          <button type="button" id="addTagBtn" class="btn btn-small btn-add-tag">追加</button>
+        </div>
+        <div class="tag-list" id="tagList" role="list" aria-label="追加されたタグ"></div>
+        <p class="hint-text"><code class="tag-code">x-clipper</code>, <code class="tag-code">x-user-アカウント名</code> は自動追加</p>
+      </div>
+
       <!-- 保存ボタン -->
       <button
         type="button"

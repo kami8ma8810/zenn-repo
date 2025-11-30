@@ -1,6 +1,7 @@
 import { isValidTweetUrl } from '@/lib/tweet-parser'
 import { getSettings, saveSettings } from '@/lib/storage'
 import { testConnection, listFolders } from '@/lib/obsidian-api'
+import { createTagManager, type TagManager } from '@/lib/tag-manager'
 
 /** DOM要素（遅延初期化） */
 let elements: {
@@ -15,6 +16,10 @@ let elements: {
   urlInput: HTMLInputElement
   urlError: HTMLElement
   folderSelect: HTMLSelectElement
+  tagInput: HTMLInputElement
+  addTagBtn: HTMLButtonElement
+  tagList: HTMLElement
+  tagCount: HTMLElement
   saveBtn: HTMLButtonElement
   saveBtnText: HTMLElement
   saveBtnLoading: HTMLElement
@@ -22,6 +27,9 @@ let elements: {
   resultText: HTMLElement
   settingsBtn: HTMLElement
 }
+
+/** タグ管理インスタンス */
+let tagManager: TagManager
 
 function initElements(): void {
   elements = {
@@ -36,6 +44,10 @@ function initElements(): void {
     urlInput: document.getElementById('urlInput') as HTMLInputElement,
     urlError: document.getElementById('urlError')!,
     folderSelect: document.getElementById('folderSelect') as HTMLSelectElement,
+    tagInput: document.getElementById('tagInput') as HTMLInputElement,
+    addTagBtn: document.getElementById('addTagBtn') as HTMLButtonElement,
+    tagList: document.getElementById('tagList')!,
+    tagCount: document.getElementById('tagCount')!,
     saveBtn: document.getElementById('saveBtn') as HTMLButtonElement,
     saveBtnText: document.querySelector('.btn-text')!,
     saveBtnLoading: document.querySelector('.btn-loading')!,
@@ -59,11 +71,18 @@ async function init(): Promise<void> {
   // DOM要素を初期化
   initElements()
 
+  // タグ管理を初期化
+  tagManager = createTagManager()
+
   // イベントリスナーを設定
   elements.urlInput.addEventListener('input', handleUrlInput)
   elements.saveBtn.addEventListener('click', handleSave)
   elements.settingsBtn.addEventListener('click', toggleSettings)
   elements.testConnectionBtn.addEventListener('click', handleTestConnection)
+
+  // タグ関連のイベントリスナー
+  elements.addTagBtn.addEventListener('click', handleAddTag)
+  elements.tagInput.addEventListener('keydown', handleTagInputKeydown)
 
   // 保存済みの設定を入力欄に反映
   const settings = await getSettings()
@@ -256,6 +275,85 @@ function updateSaveButton(): void {
 }
 
 /**
+ * タグ追加ハンドラ
+ * カンマ区切りで複数タグを一度に追加可能
+ */
+function handleAddTag(): void {
+  const value = elements.tagInput.value.trim()
+  if (!value) return
+
+  // カンマ区切りで複数タグを追加
+  const addedCount = tagManager.addTags(value)
+  if (addedCount > 0) {
+    elements.tagInput.value = ''
+    renderTags()
+  }
+
+  // フォーカスを戻す
+  elements.tagInput.focus()
+}
+
+/**
+ * タグ入力欄でEnterキー押下時
+ * IME入力中（変換中）は処理しない
+ */
+function handleTagInputKeydown(e: KeyboardEvent): void {
+  // IME入力中（変換確定時など）は無視
+  if (e.isComposing) {
+    return
+  }
+
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    handleAddTag()
+  }
+}
+
+/**
+ * タグ削除ハンドラ
+ */
+function handleRemoveTag(tag: string): void {
+  tagManager.removeTag(tag)
+  renderTags()
+}
+
+/**
+ * タグリストを描画
+ */
+function renderTags(): void {
+  const tags = tagManager.getTags()
+
+  // タグ数を更新
+  elements.tagCount.textContent = `(${tagManager.getCount()}/10)`
+
+  // 追加ボタンの状態を更新
+  elements.addTagBtn.disabled = !tagManager.canAddMore()
+
+  // タグリストをクリアして再描画
+  elements.tagList.innerHTML = ''
+
+  tags.forEach(tag => {
+    const tagElement = document.createElement('span')
+    tagElement.className = 'tag-item'
+    tagElement.setAttribute('role', 'listitem')
+
+    const tagText = document.createElement('span')
+    tagText.textContent = tag
+
+    const removeBtn = document.createElement('button')
+    removeBtn.type = 'button'
+    removeBtn.className = 'tag-remove-btn'
+    removeBtn.setAttribute('aria-label', `${tag} を削除`)
+    removeBtn.textContent = '×'
+    removeBtn.addEventListener('click', () => handleRemoveTag(tag))
+
+    tagElement.appendChild(tagText)
+    tagElement.appendChild(removeBtn)
+    elements.tagList.appendChild(tagElement)
+  })
+}
+
+/**
  * 保存処理
  */
 async function handleSave(): Promise<void> {
@@ -263,6 +361,7 @@ async function handleSave(): Promise<void> {
 
   const url = elements.urlInput.value.trim()
   const folder = elements.folderSelect.value
+  const tags = tagManager.getTags()
 
   isSaving = true
   setSavingState(true)
@@ -272,7 +371,7 @@ async function handleSave(): Promise<void> {
     // Background Scriptにメッセージを送信
     const response = await chrome.runtime.sendMessage({
       type: 'SAVE_TWEET',
-      data: { url, folder },
+      data: { url, folder, tags },
     })
 
     if (response?.success) {

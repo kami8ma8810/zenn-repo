@@ -133,6 +133,47 @@ export async function saveImage(
 }
 
 /**
+ * URLから画像をダウンロード
+ * @param imageUrl 画像のURL
+ * @returns 画像のBlob
+ */
+export async function downloadImage(imageUrl: string): Promise<Blob> {
+  const response = await fetch(imageUrl)
+
+  if (!response.ok) {
+    throw new Error(`Failed to download image: ${response.status}`)
+  }
+
+  return response.blob()
+}
+
+/**
+ * 画像URLから拡張子を推測
+ * @param url 画像URL
+ * @param contentType Content-Type ヘッダー
+ * @returns 拡張子（ドットなし）
+ */
+export function getImageExtension(url: string, contentType?: string): string {
+  // Content-Typeから判断
+  if (contentType) {
+    if (contentType.includes('jpeg') || contentType.includes('jpg')) return 'jpg'
+    if (contentType.includes('png')) return 'png'
+    if (contentType.includes('gif')) return 'gif'
+    if (contentType.includes('webp')) return 'webp'
+  }
+
+  // URLから判断
+  const urlLower = url.toLowerCase()
+  if (urlLower.includes('format=jpg') || urlLower.includes('format=jpeg')) return 'jpg'
+  if (urlLower.includes('format=png')) return 'png'
+  if (urlLower.includes('format=gif')) return 'gif'
+  if (urlLower.includes('format=webp')) return 'webp'
+
+  // デフォルト
+  return 'jpg'
+}
+
+/**
  * Vaultのフォルダ一覧を取得
  */
 export async function listFolders(settings: ExtensionSettings): Promise<string[]> {

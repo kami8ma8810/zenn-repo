@@ -32,6 +32,33 @@ export function generateFileName(tweet: TweetData): string {
 }
 
 /**
+ * Twitter Snowflake IDのエポック（2010年11月4日 01:42:54.657 UTC）
+ * 参考: https://developer.twitter.com/en/docs/twitter-ids
+ */
+const TWITTER_EPOCH = 1288834974657n
+
+/**
+ * ツイートIDから投稿日時を抽出
+ * TwitterのツイートIDはSnowflake形式で、上位ビットにタイムスタンプが含まれる
+ * @param tweetId ツイートID
+ * @returns 投稿日時 または null
+ */
+export function extractPostedAtFromTweetId(tweetId: string): Date | null {
+  if (!tweetId || !/^\d+$/.test(tweetId)) {
+    return null
+  }
+
+  try {
+    // ツイートIDをBigIntに変換し、右に22ビットシフトしてタイムスタンプを取得
+    const id = BigInt(tweetId)
+    const timestamp = (id >> 22n) + TWITTER_EPOCH
+    return new Date(Number(timestamp))
+  } catch {
+    return null
+  }
+}
+
+/**
  * X/Twitter URLからツイートIDを抽出
  * @param url ツイートのURL
  * @returns ツイートID または null
@@ -224,18 +251,67 @@ export function extractQuotedTweetUrl(html: string): string | null {
   return null
 }
 
+/** デフォルトタグ */
+const DEFAULT_TAG = 'x-clipper'
+
+/**
+ * タグ配列を構築
+ * - x-clipperを先頭に配置
+ * - ユーザー名を2番目に配置
+ * - 重複を除去
+ * - 空文字・空白のみを除外
+ */
+function buildTags(authorUsername: string, inputTags?: string[]): string[] {
+  const userTag = `x-user-${authorUsername}`
+  const result = [DEFAULT_TAG, userTag]
+
+  if (inputTags) {
+    for (const tag of inputTags) {
+      const trimmed = tag.trim()
+      // 空文字、x-clipper、ユーザー名タグ（重複防止）を除外
+      if (trimmed && trimmed !== DEFAULT_TAG && trimmed !== userTag) {
+        result.push(trimmed)
+      }
+    }
+  }
+
+  return result
+}
+
 /**
  * ツイートデータをMarkdown形式に変換
+ * @param tweet ツイートデータ
+ * @param savedAt 保存日時
+ * @param savedImagePaths 保存済み画像の相対パス配列（省略時はtweet.imagesから生成）
+ * @param tags タグ配列（x-clipperは自動追加される）
  */
-export function formatTweetAsMarkdown(tweet: TweetData, savedAt: Date = new Date()): string {
+export function formatTweetAsMarkdown(
+  tweet: TweetData,
+  savedAt: Date = new Date(),
+  savedImagePaths?: string[],
+  tags?: string[]
+): string {
+  // プロフィールページURL
+  const profileUrl = `https://x.com/${tweet.authorUsername}`
+
+  // ツイートIDからポスト日時を抽出
+  const postedAt = extractPostedAtFromTweetId(tweet.id)
+
   const frontmatterLines = [
     '---',
-    `author: "@${tweet.authorUsername}"`,
     `author_name: "${tweet.authorName}"`,
+    `author_url: "${profileUrl}"`,
+    `posted_at: ${postedAt?.toISOString() ?? 'unknown'}`,
     `saved_at: ${savedAt.toISOString()}`,
     `original_url: ${tweet.url}`,
-    `tweet_id: "${tweet.id}"`,
+    `post_id: "${tweet.id}"`,
   ]
+
+  // 画像がある場合
+  if (tweet.images.length > 0) {
+    frontmatterLines.push(`has_images: true`)
+    frontmatterLines.push(`image_count: ${tweet.images.length}`)
+  }
 
   // 引用ポストの場合
   if (tweet.quotedTweet) {
@@ -243,7 +319,11 @@ export function formatTweetAsMarkdown(tweet: TweetData, savedAt: Date = new Date
     frontmatterLines.push(`quoted_url: "${tweet.quotedTweet.url}"`)
   }
 
-  frontmatterLines.push('tags: [twitter, saved-tweet]')
+  // タグを処理: x-clipperを先頭に、重複を除去、空文字を除外
+  // YAMLで@などの特殊文字を含む場合はクォートが必要
+  const processedTags = buildTags(tweet.authorUsername, tags)
+  const quotedTags = processedTags.map(tag => `"${tag}"`)
+  frontmatterLines.push(`tags: [${quotedTags.join(', ')}]`)
   frontmatterLines.push('---')
 
   const frontmatter = frontmatterLines.join('\n')
@@ -257,10 +337,11 @@ export function formatTweetAsMarkdown(tweet: TweetData, savedAt: Date = new Date
   ]
 
   // 画像がある場合
-  if (tweet.images.length > 0) {
+  const imagePaths = savedImagePaths ?? tweet.images.map((_, index) => `tweet-${tweet.id}-${index + 1}.jpg`)
+  if (imagePaths.length > 0) {
     body.push('')
-    tweet.images.forEach((_, index) => {
-      body.push(`![[tweet-${tweet.id}-${index + 1}.jpg]]`)
+    imagePaths.forEach(path => {
+      body.push(`![[${path}]]`)
     })
   }
 
