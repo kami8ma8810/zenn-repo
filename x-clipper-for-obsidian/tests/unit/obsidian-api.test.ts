@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { getUniqueFilePath, fileExists } from '../../src/lib/obsidian-api'
+import { getUniqueFilePath, fileExists, testConnection } from '../../src/lib/obsidian-api'
+import { ObsidianErrorCode } from '../../src/lib/errors'
 import type { ExtensionSettings } from '../../src/types'
 
 // fetch のモック
@@ -89,5 +90,65 @@ describe('getUniqueFilePath', () => {
     const result = await getUniqueFilePath('X Clipper/テストツイート.md', mockSettings)
 
     expect(result).toBe('X Clipper/テストツイート (1).md')
+  })
+})
+
+describe('testConnection', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('接続成功時は success: true を返す', async () => {
+    mockFetch.mockResolvedValueOnce({ ok: true })
+
+    const result = await testConnection(mockSettings)
+
+    expect(result.success).toBe(true)
+    expect(result.error).toBeUndefined()
+    expect(mockFetch).toHaveBeenCalledWith(
+      'http://127.0.0.1:27123/vault/',
+      expect.objectContaining({ method: 'GET' })
+    )
+  })
+
+  it('401エラー時は UNAUTHORIZED エラーを返す', async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 401 })
+
+    const result = await testConnection(mockSettings)
+
+    expect(result.success).toBe(false)
+    expect(result.error).toBeDefined()
+    expect(result.error?.code).toBe(ObsidianErrorCode.UNAUTHORIZED)
+  })
+
+  it('403エラー時は UNAUTHORIZED エラーを返す', async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 403 })
+
+    const result = await testConnection(mockSettings)
+
+    expect(result.success).toBe(false)
+    expect(result.error).toBeDefined()
+    expect(result.error?.code).toBe(ObsidianErrorCode.UNAUTHORIZED)
+  })
+
+  it('その他のHTTPエラー時は API_ERROR を返す', async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 500 })
+
+    const result = await testConnection(mockSettings)
+
+    expect(result.success).toBe(false)
+    expect(result.error).toBeDefined()
+    expect(result.error?.code).toBe(ObsidianErrorCode.API_ERROR)
+    expect(result.error?.statusCode).toBe(500)
+  })
+
+  it('ネットワークエラー時は CONNECTION_REFUSED を返す', async () => {
+    mockFetch.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+
+    const result = await testConnection(mockSettings)
+
+    expect(result.success).toBe(false)
+    expect(result.error).toBeDefined()
+    expect(result.error?.code).toBe(ObsidianErrorCode.CONNECTION_REFUSED)
   })
 })

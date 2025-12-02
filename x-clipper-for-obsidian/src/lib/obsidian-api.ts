@@ -1,23 +1,63 @@
 import type { ExtensionSettings } from '@/types'
+import { ObsidianApiError, ObsidianErrorCode } from './errors'
 
 /**
  * Obsidian Local REST API クライアント
  * https://github.com/coddingtonbear/obsidian-local-rest-api
  */
 
+/** 接続テストの結果 */
+export interface ConnectionTestResult {
+  success: boolean
+  error?: ObsidianApiError
+}
+
 /**
  * Obsidian APIへの接続をテスト
  * /vault/ エンドポイントを使用（認証が必要なため正確にテストできる）
+ * @returns 接続成功時は { success: true }、失敗時は { success: false, error: ObsidianApiError }
  */
-export async function testConnection(settings: ExtensionSettings): Promise<boolean> {
+export async function testConnection(settings: ExtensionSettings): Promise<ConnectionTestResult> {
   try {
     const response = await fetch(`${settings.obsidianApiUrl}/vault/`, {
       method: 'GET',
       headers: buildHeaders(settings),
     })
-    return response.ok
-  } catch {
-    return false
+
+    if (response.ok) {
+      return { success: true }
+    }
+
+    // 認証エラー
+    if (response.status === 401 || response.status === 403) {
+      return {
+        success: false,
+        error: new ObsidianApiError(
+          ObsidianErrorCode.UNAUTHORIZED,
+          'APIキーが無効です',
+          response.status
+        ),
+      }
+    }
+
+    // その他のAPIエラー
+    return {
+      success: false,
+      error: new ObsidianApiError(
+        ObsidianErrorCode.API_ERROR,
+        `HTTP ${response.status}`,
+        response.status
+      ),
+    }
+  } catch (error) {
+    // ネットワークエラー（接続拒否など）
+    return {
+      success: false,
+      error: new ObsidianApiError(
+        ObsidianErrorCode.CONNECTION_REFUSED,
+        'Obsidianへの接続に失敗しました'
+      ),
+    }
   }
 }
 

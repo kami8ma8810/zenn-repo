@@ -1,8 +1,9 @@
 import { isValidTweetUrl } from '@/lib/tweet-parser'
 import { getSettings, saveSettings } from '@/lib/storage'
-import { testConnection, listFolders } from '@/lib/obsidian-api'
+import { testConnection, listFolders, type ConnectionTestResult } from '@/lib/obsidian-api'
 import { createTagManager, type TagManager } from '@/lib/tag-manager'
 import { shouldSaveAsThread } from '@/lib/thread-utils'
+import { getErrorMessage, ObsidianApiError } from '@/lib/errors'
 
 /** DOM要素（遅延初期化） */
 let elements: {
@@ -70,6 +71,7 @@ function initElements(): void {
 /** 状態 */
 let isConnected = false
 let isSaving = false
+let lastConnectionError: ObsidianApiError | undefined
 
 /**
  * 初期化
@@ -171,25 +173,24 @@ function hideThreadInfo(): void {
 /**
  * Obsidian接続をチェック
  */
-async function checkConnection(): Promise<void> {
+async function checkConnection(): Promise<ConnectionTestResult> {
   updateConnectionStatus('checking')
 
-  try {
-    const settings = await getSettings()
-    isConnected = await testConnection(settings)
+  const settings = await getSettings()
+  const result = await testConnection(settings)
 
-    if (isConnected) {
-      updateConnectionStatus('connected')
-      await loadFolders()
-    } else {
-      updateConnectionStatus('disconnected')
-    }
-  } catch {
-    isConnected = false
+  isConnected = result.success
+  lastConnectionError = result.error
+
+  if (result.success) {
+    updateConnectionStatus('connected')
+    await loadFolders()
+  } else {
     updateConnectionStatus('disconnected')
   }
 
   updateSaveButton()
+  return result
 }
 
 /**
@@ -240,13 +241,16 @@ async function handleTestConnection(): Promise<void> {
   showConnectionResult('', '接続テスト中...')
 
   // 再接続テスト
-  await checkConnection()
+  const result = await checkConnection()
 
-  // 結果を表示
-  if (isConnected) {
+  // 結果を表示（エラー時は詳細なメッセージ）
+  if (result.success) {
     showConnectionResult('success', '接続成功！')
   } else {
-    showConnectionResult('error', '接続失敗！')
+    const errorMessage = result.error
+      ? getErrorMessage(result.error)
+      : '接続に失敗しました'
+    showConnectionResult('error', errorMessage)
   }
 }
 
@@ -412,7 +416,10 @@ async function handleSave(): Promise<void> {
   if (!validateUrl() || isSaving) return
   
   if (!isConnected) {
-    showResult('error', 'Obsidian に接続してください')
+    const errorMessage = lastConnectionError
+      ? getErrorMessage(lastConnectionError)
+      : 'Obsidianに接続してください'
+    showResult('error', errorMessage)
     return
   }
 
