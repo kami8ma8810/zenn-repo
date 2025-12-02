@@ -323,7 +323,9 @@ async function handleSaveThread(url: string, folder: string, tags: string[]): Pr
  */
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
-    // 初回インストール時にオンボーディングページを開く（Phase 3で実装）
-    console.log('X Clipper for Obsidian installed')
+    // 初回インストール時にオンボーディングページを開く
+    chrome.tabs.create({
+      url: chrome.runtime.getURL('src/onboarding/onboarding.html'),
+    })
   }
 })

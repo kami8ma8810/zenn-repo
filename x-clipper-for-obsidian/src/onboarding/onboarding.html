@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>X Clipper for Obsidian - セットアップ</title>
+  <link rel="stylesheet" href="./onboarding.css">
+</head>
+<body>
+  <div class="container">
+    <!-- ヘッダー -->
+    <header class="header">
+      <h1 class="logo" data-i18n="extName">X Clipper for Obsidian</h1>
+    </header>
+
+    <!-- ステッププログレス -->
+    <nav class="step-progress" role="progressbar" aria-valuenow="1" aria-valuemin="1" aria-valuemax="4" aria-label="セットアップ進捗">
+      <div class="step-item active" data-step="1">
+        <span class="step-number">1</span>
+        <span class="step-label" data-i18n="onboardingStepWelcome">ようこそ</span>
+      </div>
+      <div class="step-divider"></div>
+      <div class="step-item" data-step="2">
+        <span class="step-number">2</span>
+        <span class="step-label" data-i18n="onboardingStepFeatures">機能紹介</span>
+      </div>
+      <div class="step-divider"></div>
+      <div class="step-item" data-step="3">
+        <span class="step-number">3</span>
+        <span class="step-label" data-i18n="onboardingStepSetup">設定</span>
+      </div>
+      <div class="step-divider"></div>
+      <div class="step-item" data-step="4">
+        <span class="step-number">4</span>
+        <span class="step-label" data-i18n="onboardingStepConnect">接続</span>
+      </div>
+    </nav>
+
+    <!-- メインコンテンツ -->
+    <main class="main">
+      <!-- Step 1: ウェルカム -->
+      <section class="step-content active" id="step1" aria-labelledby="step1-title">
+        <div class="welcome-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+        </div>
+        <h2 class="step-title" id="step1-title" data-i18n="onboardingWelcomeTitle">ようこそ！</h2>
+        <p class="step-description" data-i18n="onboardingWelcomeDescription">
+          X Clipper for Obsidian をインストールしていただきありがとうございます。
+          この拡張機能を使うと、X（Twitter）のポストを Obsidian のノートとして簡単に保存できます。
+        </p>
+        <div class="welcome-highlight">
+          <p class="highlight-text" data-i18n="onboardingWelcomeHighlight">
+            ポストが削除されても、あなたのノートはずっと残ります。
+          </p>
+        </div>
+      </section>
+
+      <!-- Step 2: 機能紹介 -->
+      <section class="step-content" id="step2" aria-labelledby="step2-title" hidden>
+        <h2 class="step-title" id="step2-title" data-i18n="onboardingFeatureTitle">この拡張機能でできること</h2>
+        <ul class="feature-list">
+          <li class="feature-item">
+            <span class="feature-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                <polyline points="14,2 14,8 20,8"/>
+              </svg>
+            </span>
+            <div class="feature-text">
+              <span class="feature-name" data-i18n="onboardingFeature1">ポストをMarkdown形式で保存</span>
+              <span class="feature-desc" data-i18n="onboardingFeature1Desc">Obsidianで編集・検索・リンクが可能</span>
+            </div>
+          </li>
+          <li class="feature-item">
+            <span class="feature-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+                <circle cx="9" cy="9" r="2"/>
+                <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+              </svg>
+            </span>
+            <div class="feature-text">
+              <span class="feature-name" data-i18n="onboardingFeature2">画像も自動で保存</span>
+              <span class="feature-desc" data-i18n="onboardingFeature2Desc">添付画像をローカルにダウンロード</span>
+            </div>
+          </li>
+          <li class="feature-item">
+            <span class="feature-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+            </span>
+            <div class="feature-text">
+              <span class="feature-name" data-i18n="onboardingFeature3">スレッドをまとめて保存</span>
+              <span class="feature-desc" data-i18n="onboardingFeature3Desc">連投リプライを1つのノートに</span>
+            </div>
+          </li>
+          <li class="feature-item">
+            <span class="feature-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/>
+                <path d="M7 7h.01"/>
+              </svg>
+            </span>
+            <div class="feature-text">
+              <span class="feature-name" data-i18n="onboardingFeature4">タグで整理</span>
+              <span class="feature-desc" data-i18n="onboardingFeature4Desc">自分だけのナレッジベースを構築</span>
+            </div>
+          </li>
+        </ul>
+      </section>
+
+      <!-- Step 3: Obsidian設定ガイド -->
+      <section class="step-content" id="step3" aria-labelledby="step3-title" hidden>
+        <h2 class="step-title" id="step3-title" data-i18n="onboardingSetupTitle">Obsidianの準備</h2>
+        <p class="step-description" data-i18n="onboardingSetupDescription">
+          この拡張機能を使うには、Obsidian に「Local REST API」プラグインをインストールする必要があります。
+        </p>
+        <ol class="setup-steps">
+          <li class="setup-step">
+            <span class="setup-number">1</span>
+            <span class="setup-text" data-i18n="onboardingSetupStep1">Obsidian を起動</span>
+          </li>
+          <li class="setup-step">
+            <span class="setup-number">2</span>
+            <span class="setup-text" data-i18n="onboardingSetupStep2">設定 → コミュニティプラグイン → 参照 をクリック</span>
+          </li>
+          <li class="setup-step">
+            <span class="setup-number">3</span>
+            <span class="setup-text" data-i18n="onboardingSetupStep3">「Local REST API」を検索してインストール</span>
+          </li>
+          <li class="setup-step">
+            <span class="setup-number">4</span>
+            <span class="setup-text" data-i18n="onboardingSetupStep4">プラグインを有効化</span>
+          </li>
+          <li class="setup-step">
+            <span class="setup-number">5</span>
+            <span class="setup-text" data-i18n="onboardingSetupStep5">プラグイン設定を開き、API キーをコピー</span>
+          </li>
+        </ol>
+        <div class="setup-note">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 16v-4"/>
+            <path d="M12 8h.01"/>
+          </svg>
+          <span data-i18n="onboardingSetupNote">準備ができたら「次へ」をクリックしてください</span>
+        </div>
+      </section>
+
+      <!-- Step 4: 接続設定 -->
+      <section class="step-content" id="step4" aria-labelledby="step4-title" hidden>
+        <h2 class="step-title" id="step4-title" data-i18n="onboardingConnectionTitle">接続設定</h2>
+        <p class="step-description" data-i18n="onboardingConnectionDescription">
+          Obsidian Local REST API の設定情報を入力してください。
+        </p>
+
+        <div class="connection-form">
+          <!-- API URL -->
+          <div class="form-group">
+            <label for="apiUrlInput" class="label">API URL</label>
+            <input
+              type="url"
+              id="apiUrlInput"
+              class="input"
+              value="http://127.0.0.1:27123"
+              autocomplete="off"
+            >
+            <p class="hint-text" data-i18n="onboardingApiUrlHint">通常は変更不要です</p>
+          </div>
+
+          <!-- APIキー -->
+          <div class="form-group">
+            <label for="apiKeyInput" class="label">API Key</label>
+            <input
+              type="password"
+              id="apiKeyInput"
+              class="input"
+              placeholder="Obsidian からコピーした API キーを貼り付け"
+              autocomplete="off"
+            >
+          </div>
+
+          <!-- 接続テストボタン -->
+          <button type="button" id="testConnectionBtn" class="btn btn-secondary">
+            <span class="btn-text" data-i18n="onboardingTestConnection">接続テスト</span>
+            <span class="btn-loading" hidden>
+              <svg class="spinner" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="31.4 31.4" transform="rotate(-90 12 12)"/>
+              </svg>
+            </span>
+          </button>
+
+          <!-- 接続結果 -->
+          <div class="connection-result" id="connectionResult" role="status" aria-live="polite"></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- フッター（ナビゲーションボタン） -->
+    <footer class="footer">
+      <button type="button" id="prevBtn" class="btn btn-outline" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m15 18-6-6 6-6"/>
+        </svg>
+        <span data-i18n="onboardingPrev">戻る</span>
+      </button>
+      <button type="button" id="nextBtn" class="btn btn-primary">
+        <span data-i18n="onboardingNext">次へ</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m9 18 6-6-6-6"/>
+        </svg>
+      </button>
+      <button type="button" id="completeBtn" class="btn btn-primary" hidden disabled>
+        <span data-i18n="onboardingComplete">完了</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m5 12 5 5L20 7"/>
+        </svg>
+      </button>
+    </footer>
+  </div>
+
+  <script type="module" src="./onboarding.ts"></script>
+</body>
+</html>
