@@ -6,7 +6,6 @@ import { shouldSaveAsThread } from '@/lib/thread-utils'
 
 /** DOM要素（遅延初期化） */
 let elements: {
-  connectionStatus: HTMLElement
   statusDot: HTMLElement
   statusText: HTMLElement
   settingsSection: HTMLElement
@@ -40,7 +39,6 @@ let detectedThreadCount = 0
 
 function initElements(): void {
   elements = {
-    connectionStatus: document.getElementById('connectionStatus')!,
     statusDot: document.getElementById('statusDot')!,
     statusText: document.getElementById('statusText')!,
     settingsSection: document.getElementById('settingsSection')!,
@@ -197,11 +195,11 @@ function updateConnectionStatus(status: 'checking' | 'connected' | 'disconnected
 
   switch (status) {
     case 'checking':
-      elements.statusText.textContent = '接続確認中...'
+      elements.statusText.textContent = '確認中...'
       break
     case 'connected':
       elements.statusDot.classList.add('connected')
-      elements.statusText.textContent = 'Obsidian に接続済み'
+      elements.statusText.textContent = '接続中'
       // 手動で表示されていない限り、設定セクションを非表示
       if (!isSettingsVisible) {
         updateSettingsVisibility()
@@ -209,7 +207,7 @@ function updateConnectionStatus(status: 'checking' | 'connected' | 'disconnected
       break
     case 'disconnected':
       elements.statusDot.classList.add('disconnected')
-      elements.statusText.textContent = 'Obsidian に接続できません'
+      elements.statusText.textContent = '未接続'
       // 未接続時はデフォルトで設定セクションを表示
       isSettingsVisible = true
       updateSettingsVisibility()
@@ -248,7 +246,7 @@ async function handleTestConnection(): Promise<void> {
   if (isConnected) {
     showConnectionResult('success', '接続成功！')
   } else {
-    showConnectionResult('error', '接続失敗。URL と APIキーを確認してください')
+    showConnectionResult('error', '接続失敗！')
   }
 }
 

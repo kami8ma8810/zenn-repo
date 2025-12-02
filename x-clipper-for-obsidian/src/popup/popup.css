@@ -51,6 +51,12 @@ body {
   font-weight: 600;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .settings-btn {
   display: flex;
   align-items: center;
@@ -97,15 +103,13 @@ body {
   gap: 12px;
 }
 
-/* 接続ステータス */
-.status {
+/* 接続ステータス（ヘッダー内） */
+.status-indicator {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background-color: var(--color-bg-secondary);
-  border-radius: var(--radius);
-  font-size: 12px;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--color-text-secondary);
 }
 
 .status-dot {
