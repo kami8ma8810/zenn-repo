@@ -87,6 +87,7 @@ async function init(): Promise<void> {
   elements.settingsBtn.addEventListener('click', openSettingsDialog)
   elements.closeSettingsBtn.addEventListener('click', closeSettingsDialog)
   elements.settingsDialog.addEventListener('click', handleDialogBackdropClick)
+  elements.settingsDialog.addEventListener('close', handleDialogClose)
   elements.testConnectionBtn.addEventListener('click', handleTestConnection)
 
   // タグ関連のイベントリスナー
@@ -97,6 +98,9 @@ async function init(): Promise<void> {
   const settings = await getSettings()
   elements.apiUrlInput.value = settings.obsidianApiUrl
   elements.apiKeyInput.value = settings.obsidianApiKey
+
+  // ポップアップが非アクティブになったらダイアログを閉じる
+  document.addEventListener('visibilitychange', handleVisibilityChange)
 
   // 現在のタブからURLを取得
   await fillCurrentTabUrl()
@@ -483,6 +487,7 @@ function hideResult(): void {
  * 設定ダイアログを開く
  */
 function openSettingsDialog(): void {
+  document.body.classList.add('dialog-open')
   elements.settingsDialog.showModal()
 }
 
@@ -491,6 +496,7 @@ function openSettingsDialog(): void {
  */
 function closeSettingsDialog(): void {
   elements.settingsDialog.close()
+  document.body.classList.remove('dialog-open')
 }
 
 /**
@@ -499,6 +505,23 @@ function closeSettingsDialog(): void {
 function handleDialogBackdropClick(e: MouseEvent): void {
   // dialog要素自体がクリックされた場合（＝バックドロップ）のみ閉じる
   if (e.target === elements.settingsDialog) {
+    closeSettingsDialog()
+  }
+}
+
+/**
+ * ダイアログが閉じられたときの処理（Escapeキー対応）
+ */
+function handleDialogClose(): void {
+  document.body.classList.remove('dialog-open')
+}
+
+/**
+ * ポップアップの表示状態変化時の処理
+ */
+function handleVisibilityChange(): void {
+  // ポップアップが非表示になったらダイアログを閉じる
+  if (document.hidden && elements.settingsDialog.open) {
     closeSettingsDialog()
   }
 }
