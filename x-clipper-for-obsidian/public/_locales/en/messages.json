@@ -46,5 +46,145 @@
   "settings": {
     "message": "Settings",
     "description": "Settings link text"
+  },
+  "onboardingStepWelcome": {
+    "message": "Welcome",
+    "description": "Onboarding step 1 label"
+  },
+  "onboardingStepFeatures": {
+    "message": "Features",
+    "description": "Onboarding step 2 label"
+  },
+  "onboardingStepSetup": {
+    "message": "Setup",
+    "description": "Onboarding step 3 label"
+  },
+  "onboardingStepConnect": {
+    "message": "Connect",
+    "description": "Onboarding step 4 label"
+  },
+  "onboardingWelcomeTitle": {
+    "message": "Welcome!",
+    "description": "Welcome title"
+  },
+  "onboardingWelcomeDescription": {
+    "message": "Thank you for installing X Clipper for Obsidian. This extension lets you easily save X (Twitter) posts as notes in Obsidian.",
+    "description": "Welcome description"
+  },
+  "onboardingWelcomeHighlight": {
+    "message": "Even if posts get deleted, your notes will remain forever.",
+    "description": "Welcome highlight text"
+  },
+  "onboardingFeatureTitle": {
+    "message": "What you can do",
+    "description": "Feature section title"
+  },
+  "onboardingFeature1": {
+    "message": "Save posts in Markdown format",
+    "description": "Feature 1 name"
+  },
+  "onboardingFeature1Desc": {
+    "message": "Edit, search, and link in Obsidian",
+    "description": "Feature 1 description"
+  },
+  "onboardingFeature2": {
+    "message": "Automatically save images",
+    "description": "Feature 2 name"
+  },
+  "onboardingFeature2Desc": {
+    "message": "Download attached images locally",
+    "description": "Feature 2 description"
+  },
+  "onboardingFeature3": {
+    "message": "Save threads as one note",
+    "description": "Feature 3 name"
+  },
+  "onboardingFeature3Desc": {
+    "message": "Combine reply threads into a single note",
+    "description": "Feature 3 description"
+  },
+  "onboardingFeature4": {
+    "message": "Organize with tags",
+    "description": "Feature 4 name"
+  },
+  "onboardingFeature4Desc": {
+    "message": "Build your personal knowledge base",
+    "description": "Feature 4 description"
+  },
+  "onboardingSetupTitle": {
+    "message": "Set up Obsidian",
+    "description": "Setup section title"
+  },
+  "onboardingSetupDescription": {
+    "message": "To use this extension, you need to install the \"Local REST API\" plugin in Obsidian.",
+    "description": "Setup description"
+  },
+  "onboardingSetupStep1": {
+    "message": "Open Obsidian",
+    "description": "Setup step 1"
+  },
+  "onboardingSetupStep2": {
+    "message": "Go to Settings → Community plugins → Browse",
+    "description": "Setup step 2"
+  },
+  "onboardingSetupStep3": {
+    "message": "Search for \"Local REST API\" and install it",
+    "description": "Setup step 3"
+  },
+  "onboardingSetupStep4": {
+    "message": "Enable the plugin",
+    "description": "Setup step 4"
+  },
+  "onboardingSetupStep5": {
+    "message": "Open plugin settings and copy the API key",
+    "description": "Setup step 5"
+  },
+  "onboardingSetupNote": {
+    "message": "Click \"Next\" when you're ready",
+    "description": "Setup note"
+  },
+  "onboardingConnectionTitle": {
+    "message": "Connection Settings",
+    "description": "Connection section title"
+  },
+  "onboardingConnectionDescription": {
+    "message": "Enter your Obsidian Local REST API settings.",
+    "description": "Connection description"
+  },
+  "onboardingApiUrlHint": {
+    "message": "Usually no change needed",
+    "description": "API URL hint"
+  },
+  "onboardingTestConnection": {
+    "message": "Test Connection",
+    "description": "Test connection button"
+  },
+  "onboardingConnectionSuccess": {
+    "message": "Connected to Obsidian!",
+    "description": "Connection success message"
+  },
+  "onboardingConnectionFailed": {
+    "message": "Connection failed. Make sure Obsidian is running and the Local REST API plugin is enabled.",
+    "description": "Connection failed message"
+  },
+  "onboardingPrev": {
+    "message": "Back",
+    "description": "Previous button"
+  },
+  "onboardingNext": {
+    "message": "Next",
+    "description": "Next button"
+  },
+  "onboardingComplete": {
+    "message": "Complete",
+    "description": "Complete button"
+  },
+  "settingsOpen": {
+    "message": "Open settings",
+    "description": "Settings button aria-label when closed"
+  },
+  "settingsClose": {
+    "message": "Close settings",
+    "description": "Settings button aria-label when open"
   }
 }
