@@ -75,6 +75,21 @@ body {
   outline-offset: 2px;
 }
 
+/* 設定パネルが開いている時のボタンスタイル */
+.settings-btn[aria-expanded="true"] {
+  background-color: var(--color-bg-secondary);
+  color: var(--color-primary);
+}
+
+/* アイコンの回転アニメーション（開閉を視覚化） */
+.settings-btn svg {
+  transition: transform 0.2s ease;
+}
+
+.settings-btn[aria-expanded="true"] svg {
+  transform: rotate(90deg);
+}
+
 /* メイン */
 .main {
   display: flex;
@@ -419,5 +434,22 @@ body {
   color: var(--color-primary);
   font-weight: 600;
   font-size: 12px;
+}
+
+.thread-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.thread-checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
 }
 

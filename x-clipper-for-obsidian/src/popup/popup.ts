@@ -2,6 +2,7 @@ import { isValidTweetUrl } from '@/lib/tweet-parser'
 import { getSettings, saveSettings } from '@/lib/storage'
 import { testConnection, listFolders } from '@/lib/obsidian-api'
 import { createTagManager, type TagManager } from '@/lib/tag-manager'
+import { shouldSaveAsThread } from '@/lib/thread-utils'
 
 /** DOM要素（遅延初期化） */
 let elements: {
@@ -17,6 +18,7 @@ let elements: {
   urlError: HTMLElement
   threadInfo: HTMLElement
   threadCount: HTMLElement
+  mergeThreadCheckbox: HTMLInputElement
   folderSelect: HTMLSelectElement
   tagInput: HTMLInputElement
   addTagBtn: HTMLButtonElement
@@ -50,6 +52,7 @@ function initElements(): void {
     urlError: document.getElementById('urlError')!,
     threadInfo: document.getElementById('threadInfo')!,
     threadCount: document.getElementById('threadCount')!,
+    mergeThreadCheckbox: document.getElementById('mergeThreadCheckbox') as HTMLInputElement,
     folderSelect: document.getElementById('folderSelect') as HTMLSelectElement,
     tagInput: document.getElementById('tagInput') as HTMLInputElement,
     addTagBtn: document.getElementById('addTagBtn') as HTMLButtonElement,
@@ -150,7 +153,7 @@ async function detectThread(tabId: number): Promise<void> {
  * スレッド情報を表示
  */
 function showThreadInfo(count: number): void {
-  elements.threadCount.textContent = `${count}件のスレッドが1つのノートとして保存されます`
+  elements.threadCount.textContent = `${count}件のスレッドを検出`
   elements.threadInfo.removeAttribute('hidden')
 }
 
@@ -201,15 +204,15 @@ function updateConnectionStatus(status: 'checking' | 'connected' | 'disconnected
       elements.statusText.textContent = 'Obsidian に接続済み'
       // 手動で表示されていない限り、設定セクションを非表示
       if (!isSettingsVisible) {
-        elements.settingsSection.setAttribute('hidden', '')
+        updateSettingsVisibility()
       }
       break
     case 'disconnected':
       elements.statusDot.classList.add('disconnected')
       elements.statusText.textContent = 'Obsidian に接続できません'
-      // 未接続時はデフォルトで設定セクションを表示（isSettingsVisibleをtrueに）
+      // 未接続時はデフォルトで設定セクションを表示
       isSettingsVisible = true
-      elements.settingsSection.removeAttribute('hidden')
+      updateSettingsVisibility()
       break
   }
 }
@@ -419,8 +422,10 @@ async function handleSave(): Promise<void> {
   hideResult()
 
   try {
-    // スレッドが検出されていればスレッド保存、そうでなければ単一ツイート保存
-    const messageType = detectedThreadCount > 1 ? 'SAVE_THREAD' : 'SAVE_TWEET'
+    // スレッドが検出されていて、かつ「まとめる」がONの場合のみスレッド保存
+    const messageType = shouldSaveAsThread(detectedThreadCount, elements.mergeThreadCheckbox.checked)
+      ? 'SAVE_THREAD'
+      : 'SAVE_TWEET'
 
     const response = await chrome.runtime.sendMessage({
       type: messageType,
@@ -481,7 +486,25 @@ function hideResult(): void {
  */
 function toggleSettings(): void {
   isSettingsVisible = !isSettingsVisible
+  updateSettingsVisibility()
+}
 
+/**
+ * 設定セクションの表示状態を更新
+ */
+function updateSettingsVisibility(): void {
+  // aria-expanded を更新
+  elements.settingsBtn.setAttribute('aria-expanded', String(isSettingsVisible))
+
+  // aria-label を更新（開閉状態に応じて）
+  const labelKey = isSettingsVisible ? 'settingsClose' : 'settingsOpen'
+  const fallbackLabel = isSettingsVisible ? '設定を閉じる' : '設定を開く'
+  elements.settingsBtn.setAttribute(
+    'aria-label',
+    chrome.i18n.getMessage(labelKey) || fallbackLabel
+  )
+
+  // 設定セクションの表示/非表示
   if (isSettingsVisible) {
     elements.settingsSection.removeAttribute('hidden')
   } else {
