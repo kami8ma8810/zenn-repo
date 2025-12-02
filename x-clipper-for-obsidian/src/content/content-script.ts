@@ -13,18 +13,13 @@ interface TweetImageData {
  * 現在のページからツイートの画像URLを抽出
  */
 function extractTweetImages(): TweetImageData | null {
-  console.log('[X Clipper] extractTweetImages called')
-  console.log('[X Clipper] Current URL:', window.location.href)
-
   // 現在のURLからツイートIDを取得
   const match = window.location.pathname.match(/\/status\/(\d+)/)
   if (!match) {
-    console.log('[X Clipper] No tweet ID found in URL')
     return null
   }
 
   const tweetId = match[1]
-  console.log('[X Clipper] Tweet ID:', tweetId)
 
   // ツイートの画像を探す
   // X/Twitterの画像は pbs.twimg.com/media/ から配信される
@@ -32,7 +27,6 @@ function extractTweetImages(): TweetImageData | null {
 
   // 全てのarticle要素を取得
   const articles = document.querySelectorAll('article[data-testid="tweet"]')
-  console.log('[X Clipper] Found articles:', articles.length)
 
   // 対象のツイートIDを含むarticleを探す
   let targetArticle: Element | null = null
@@ -44,7 +38,6 @@ function extractTweetImages(): TweetImageData | null {
       const href = link.getAttribute('href')
       if (href?.includes(`/status/${tweetId}`)) {
         targetArticle = article
-        console.log('[X Clipper] Found matching article for tweet ID:', tweetId)
         break
       }
     }
@@ -53,18 +46,15 @@ function extractTweetImages(): TweetImageData | null {
 
   // 見つからなければ最初のarticleを使用（フォールバック）
   if (!targetArticle && articles.length > 0) {
-    console.log('[X Clipper] No matching article found, using first article as fallback')
     targetArticle = articles[0]
   }
 
   if (targetArticle) {
     // img要素を探す
     const images = targetArticle.querySelectorAll('img[src*="pbs.twimg.com/media"]')
-    console.log('[X Clipper] Found images in target article:', images.length)
 
-    images.forEach((img, index) => {
+    images.forEach(img => {
       const src = img.getAttribute('src')
-      console.log(`[X Clipper] Image ${index + 1} src:`, src)
       if (src) {
         // 高解像度版のURLに変換
         const highResUrl = src
@@ -76,7 +66,6 @@ function extractTweetImages(): TweetImageData | null {
 
     // 方法2: 背景画像として設定されている場合
     if (imageUrls.length === 0) {
-      console.log('[X Clipper] Trying background-image method')
       const divs = targetArticle.querySelectorAll('div[style*="background-image"]')
       divs.forEach(div => {
         const style = div.getAttribute('style')
@@ -92,7 +81,6 @@ function extractTweetImages(): TweetImageData | null {
 
   // 重複を除去
   const uniqueUrls = [...new Set(imageUrls)]
-  console.log('[X Clipper] Final image URLs:', uniqueUrls)
 
   return {
     tweetId,
@@ -187,8 +175,6 @@ function extractTweetFromArticle(article: Element): TweetData | null {
  * 大元のツイート作者による連続リプのみを収集
  */
 function extractThread(): ThreadExtractionResult {
-  console.log('[X Clipper] extractThread called')
-
   // URLからツイートIDを取得
   const urlMatch = window.location.pathname.match(/\/status\/(\d+)/)
   if (!urlMatch) {
@@ -197,7 +183,6 @@ function extractThread(): ThreadExtractionResult {
 
   // 全てのツイート（article要素）を取得
   const articles = document.querySelectorAll('article[data-testid="tweet"]')
-  console.log(`[X Clipper] Found ${articles.length} articles`)
 
   if (articles.length === 0) {
     return { success: false, error: 'No tweets found on page' }
@@ -211,8 +196,6 @@ function extractThread(): ThreadExtractionResult {
       allTweets.push(tweet)
     }
   }
-
-  console.log(`[X Clipper] Extracted ${allTweets.length} tweets`)
 
   if (allTweets.length === 0) {
     return { success: false, error: 'Failed to extract tweet data' }
@@ -229,12 +212,9 @@ function extractThread(): ThreadExtractionResult {
       threadTweets.push(tweet)
     } else {
       // 他のユーザーが出てきたら終了
-      console.log(`[X Clipper] Different author found (${tweet.authorUsername}), stopping`)
       break
     }
   }
-
-  console.log(`[X Clipper] Thread contains ${threadTweets.length} tweets by @${originalAuthor}`)
 
   const thread: ThreadData = {
     authorUsername: originalAuthor,

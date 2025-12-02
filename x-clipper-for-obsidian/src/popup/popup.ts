@@ -323,7 +323,7 @@ function validateUrl(): boolean {
 function updateSaveButton(): void {
   const url = elements.urlInput.value.trim()
   const isValid = url && isValidTweetUrl(url)
-  elements.saveBtn.disabled = !isConnected || !isValid || isSaving
+  elements.saveBtn.disabled = !isValid || isSaving
 }
 
 /**
@@ -409,7 +409,12 @@ function renderTags(): void {
  * 保存処理
  */
 async function handleSave(): Promise<void> {
-  if (!validateUrl() || !isConnected || isSaving) return
+  if (!validateUrl() || isSaving) return
+  
+  if (!isConnected) {
+    showResult('error', 'Obsidian に接続してください')
+    return
+  }
 
   const url = elements.urlInput.value.trim()
   const folder = elements.folderSelect.value
@@ -439,7 +444,6 @@ async function handleSave(): Promise<void> {
       showResult('error', response?.error || chrome.i18n.getMessage('saveError') || '保存に失敗しました')
     }
   } catch (error) {
-    console.error('Save error:', error)
     const message = error instanceof Error ? error.message : '不明なエラー'
     showResult('error', message)
   }

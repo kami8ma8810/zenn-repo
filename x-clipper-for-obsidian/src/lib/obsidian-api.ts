@@ -7,10 +7,11 @@ import type { ExtensionSettings } from '@/types'
 
 /**
  * Obsidian APIへの接続をテスト
+ * /vault/ エンドポイントを使用（認証が必要なため正確にテストできる）
  */
 export async function testConnection(settings: ExtensionSettings): Promise<boolean> {
   try {
-    const response = await fetch(`${settings.obsidianApiUrl}/`, {
+    const response = await fetch(`${settings.obsidianApiUrl}/vault/`, {
       method: 'GET',
       headers: buildHeaders(settings),
     })
