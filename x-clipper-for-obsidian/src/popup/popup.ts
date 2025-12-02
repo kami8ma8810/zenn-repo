@@ -8,7 +8,8 @@ import { shouldSaveAsThread } from '@/lib/thread-utils'
 let elements: {
   statusDot: HTMLElement
   statusText: HTMLElement
-  settingsSection: HTMLElement
+  settingsDialog: HTMLDialogElement
+  closeSettingsBtn: HTMLElement
   apiUrlInput: HTMLInputElement
   apiKeyInput: HTMLInputElement
   testConnectionBtn: HTMLButtonElement
@@ -41,7 +42,8 @@ function initElements(): void {
   elements = {
     statusDot: document.getElementById('statusDot')!,
     statusText: document.getElementById('statusText')!,
-    settingsSection: document.getElementById('settingsSection')!,
+    settingsDialog: document.getElementById('settingsDialog') as HTMLDialogElement,
+    closeSettingsBtn: document.getElementById('closeSettingsBtn')!,
     apiUrlInput: document.getElementById('apiUrlInput') as HTMLInputElement,
     apiKeyInput: document.getElementById('apiKeyInput') as HTMLInputElement,
     testConnectionBtn: document.getElementById('testConnectionBtn') as HTMLButtonElement,
@@ -69,9 +71,6 @@ function initElements(): void {
 let isConnected = false
 let isSaving = false
 
-/** 設定セクションが手動で表示されているか */
-let isSettingsVisible = false
-
 /**
  * 初期化
  */
@@ -85,7 +84,9 @@ async function init(): Promise<void> {
   // イベントリスナーを設定
   elements.urlInput.addEventListener('input', handleUrlInput)
   elements.saveBtn.addEventListener('click', handleSave)
-  elements.settingsBtn.addEventListener('click', toggleSettings)
+  elements.settingsBtn.addEventListener('click', openSettingsDialog)
+  elements.closeSettingsBtn.addEventListener('click', closeSettingsDialog)
+  elements.settingsDialog.addEventListener('click', handleDialogBackdropClick)
   elements.testConnectionBtn.addEventListener('click', handleTestConnection)
 
   // タグ関連のイベントリスナー
@@ -200,17 +201,12 @@ function updateConnectionStatus(status: 'checking' | 'connected' | 'disconnected
     case 'connected':
       elements.statusDot.classList.add('connected')
       elements.statusText.textContent = '接続中'
-      // 手動で表示されていない限り、設定セクションを非表示
-      if (!isSettingsVisible) {
-        updateSettingsVisibility()
-      }
       break
     case 'disconnected':
       elements.statusDot.classList.add('disconnected')
       elements.statusText.textContent = '未接続'
-      // 未接続時はデフォルトで設定セクションを表示
-      isSettingsVisible = true
-      updateSettingsVisibility()
+      // 未接続時は自動で設定ダイアログを表示
+      openSettingsDialog()
       break
   }
 }
@@ -484,33 +480,26 @@ function hideResult(): void {
 }
 
 /**
- * 設定セクションの表示/非表示をトグル
+ * 設定ダイアログを開く
  */
-function toggleSettings(): void {
-  isSettingsVisible = !isSettingsVisible
-  updateSettingsVisibility()
+function openSettingsDialog(): void {
+  elements.settingsDialog.showModal()
 }
 
 /**
- * 設定セクションの表示状態を更新
+ * 設定ダイアログを閉じる
  */
-function updateSettingsVisibility(): void {
-  // aria-expanded を更新
-  elements.settingsBtn.setAttribute('aria-expanded', String(isSettingsVisible))
+function closeSettingsDialog(): void {
+  elements.settingsDialog.close()
+}
 
-  // aria-label を更新（開閉状態に応じて）
-  const labelKey = isSettingsVisible ? 'settingsClose' : 'settingsOpen'
-  const fallbackLabel = isSettingsVisible ? '設定を閉じる' : '設定を開く'
-  elements.settingsBtn.setAttribute(
-    'aria-label',
-    chrome.i18n.getMessage(labelKey) || fallbackLabel
-  )
-
-  // 設定セクションの表示/非表示
-  if (isSettingsVisible) {
-    elements.settingsSection.removeAttribute('hidden')
-  } else {
-    elements.settingsSection.setAttribute('hidden', '')
+/**
+ * バックドロップクリックでダイアログを閉じる
+ */
+function handleDialogBackdropClick(e: MouseEvent): void {
+  // dialog要素自体がクリックされた場合（＝バックドロップ）のみ閉じる
+  if (e.target === elements.settingsDialog) {
+    closeSettingsDialog()
   }
 }
 
