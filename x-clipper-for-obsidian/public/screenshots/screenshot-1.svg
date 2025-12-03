@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 800">
+  <defs>
+    <!-- 紫のグラデーション背景 -->
+    <linearGradient id="bgGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#4c1d95"/>
+      <stop offset="50%" stop-color="#6d28d9"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <!-- 装飾用の光 -->
+    <radialGradient id="glowTop" cx="80%" cy="20%" r="50%">
+      <stop offset="0%" stop-color="rgba(167,139,250,0.3)"/>
+      <stop offset="100%" stop-color="rgba(167,139,250,0)"/>
+    </radialGradient>
+    <radialGradient id="glowBottom" cx="20%" cy="80%" r="40%">
+      <stop offset="0%" stop-color="rgba(139,92,246,0.2)"/>
+      <stop offset="100%" stop-color="rgba(139,92,246,0)"/>
+    </radialGradient>
+  </defs>
+
+  <!-- 紫グラデーション背景 -->
+  <rect width="1280" height="800" fill="url(#bgGradient)"/>
+
+  <!-- 装飾の光 -->
+  <rect width="1280" height="800" fill="url(#glowTop)"/>
+  <rect width="1280" height="800" fill="url(#glowBottom)"/>
+
+  <!-- 上部：キャッチコピー -->
+  <text x="640" y="100" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="48" font-weight="700" fill="white">
+    Save X posts to Obsidian in one click
+  </text>
+  <text x="640" y="150" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="20" fill="rgba(255,255,255,0.7)">
+    Posts, images, and metadata — all preserved automatically
+  </text>
+
+  <!-- 中央：ポップアップUI -->
+  <g transform="translate(440, 190)">
+    <!-- ポップアップ背景（影付き） -->
+    <rect x="0" y="0" width="400" height="560" rx="16" fill="white" filter="drop-shadow(0 25px 50px rgba(0,0,0,0.3))"/>
+
+    <!-- ヘッダー -->
+    <g transform="translate(24, 24)">
+      <text x="0" y="22" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="600" fill="#1a1a1a">ポストを保存</text>
+      <!-- 設定アイコン -->
+      <svg x="310" y="0" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+    </g>
+
+    <!-- 区切り線 -->
+    <line x1="24" y1="60" x2="376" y2="60" stroke="#f3f4f6" stroke-width="1"/>
+
+    <!-- 接続ステータス -->
+    <g transform="translate(24, 75)">
+      <circle cx="6" cy="8" r="4" fill="#22c55e"/>
+      <text x="18" y="12" font-family="system-ui, -apple-system, sans-serif" font-size="13" fill="#6b7280">Obsidian に接続中</text>
+    </g>
+
+    <!-- URL入力 -->
+    <g transform="translate(24, 110)">
+      <text x="0" y="12" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500" fill="#374151">ポストのURL</text>
+      <rect x="0" y="22" width="352" height="42" rx="8" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1"/>
+      <text x="14" y="49" font-family="system-ui, -apple-system, sans-serif" font-size="14" fill="#1f2937">https://x.com/user/status/1234...</text>
+    </g>
+
+    <!-- フォルダ選択 -->
+    <g transform="translate(24, 190)">
+      <text x="0" y="12" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500" fill="#374151">保存先フォルダ</text>
+      <rect x="0" y="22" width="352" height="42" rx="8" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1"/>
+      <text x="14" y="49" font-family="system-ui, -apple-system, sans-serif" font-size="14" fill="#1f2937">X Clipper</text>
+      <svg x="320" y="32" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2">
+        <path d="m6 9 6 6 6-6"/>
+      </svg>
+    </g>
+
+    <!-- タグ入力 -->
+    <g transform="translate(24, 270)">
+      <text x="0" y="12" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500" fill="#374151">タグ</text>
+      <text x="30" y="12" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="#9ca3af">(2/10)</text>
+
+      <!-- タグ入力行 -->
+      <rect x="0" y="22" width="270" height="38" rx="8" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1"/>
+      <text x="14" y="47" font-family="system-ui, -apple-system, sans-serif" font-size="13" fill="#9ca3af">タグを入力</text>
+      <rect x="280" y="22" width="72" height="38" rx="8" fill="#f3f4f6"/>
+      <text x="316" y="47" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="13" fill="#6b7280">追加</text>
+
+      <!-- タグリスト -->
+      <g transform="translate(0, 70)">
+        <rect x="0" y="0" width="65" height="28" rx="14" fill="#ede9fe"/>
+        <text x="32" y="18" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#7c3aed">tech</text>
+
+        <rect x="75" y="0" width="95" height="28" rx="14" fill="#ede9fe"/>
+        <text x="122" y="18" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#7c3aed">important</text>
+      </g>
+
+      <text x="0" y="115" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="#9ca3af">
+        x-clipper, x-user-名前 は自動追加
+      </text>
+    </g>
+
+    <!-- 保存ボタン -->
+    <g transform="translate(24, 420)">
+      <rect x="0" y="0" width="352" height="48" rx="10" fill="#7c3aed"/>
+      <text x="176" y="30" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="15" font-weight="600" fill="white">保存</text>
+    </g>
+
+    <!-- 成功メッセージ -->
+    <g transform="translate(24, 485)">
+      <rect x="0" y="0" width="352" height="44" rx="8" fill="#f0fdf4"/>
+      <circle cx="22" cy="22" r="10" fill="#22c55e"/>
+      <text x="18" y="26" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="white">✓</text>
+      <text x="44" y="26" font-family="system-ui, -apple-system, sans-serif" font-size="13" fill="#166534">保存しました</text>
+    </g>
+  </g>
+</svg>

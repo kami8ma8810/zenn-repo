@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 800">
+  <defs>
+    <!-- 紫のグラデーション背景 -->
+    <linearGradient id="bgGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#4c1d95"/>
+      <stop offset="50%" stop-color="#6d28d9"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <!-- 装飾用の光 -->
+    <radialGradient id="glowTop" cx="80%" cy="20%" r="50%">
+      <stop offset="0%" stop-color="rgba(167,139,250,0.3)"/>
+      <stop offset="100%" stop-color="rgba(167,139,250,0)"/>
+    </radialGradient>
+    <radialGradient id="glowBottom" cx="20%" cy="80%" r="40%">
+      <stop offset="0%" stop-color="rgba(139,92,246,0.2)"/>
+      <stop offset="100%" stop-color="rgba(139,92,246,0)"/>
+    </radialGradient>
+  </defs>
+
+  <!-- 紫グラデーション背景 -->
+  <rect width="1280" height="800" fill="url(#bgGradient)"/>
+
+  <!-- 装飾の光 -->
+  <rect width="1280" height="800" fill="url(#glowTop)"/>
+  <rect width="1280" height="800" fill="url(#glowBottom)"/>
+
+  <!-- キャッチコピー -->
+  <text x="640" y="160" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="56" font-weight="700" fill="white">
+    Never lose a valuable post again.
+  </text>
+
+  <!-- 機能カード群 -->
+  <g transform="translate(90, 280)">
+    <!-- カード1: Save X posts -->
+    <g transform="translate(0, 0)">
+      <rect x="0" y="0" width="250" height="240" rx="20" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+      <!-- クリップアイコン -->
+      <svg x="85" y="40" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551"/>
+      </svg>
+      <text x="125" y="170" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="600" fill="white">images included</text>
+    </g>
+
+    <!-- カード2: Auto metadata -->
+    <g transform="translate(275, 0)">
+      <rect x="0" y="0" width="250" height="240" rx="20" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+      <!-- タグアイコン -->
+      <svg x="85" y="40" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2 2 7l10 5 10-5-10-5Z"/>
+        <path d="m2 17 10 5 10-5"/>
+        <path d="m2 12 10 5 10-5"/>
+      </svg>
+      <text x="125" y="170" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="600" fill="white">rich metadata</text>
+    </g>
+
+    <!-- カード3: Your data is yours -->
+    <g transform="translate(550, 0)">
+      <rect x="0" y="0" width="250" height="240" rx="20" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+      <!-- ファイルアイコン -->
+      <svg x="85" y="40" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
+        <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
+        <path d="M10 9H8"/>
+        <path d="M16 13H8"/>
+        <path d="M16 17H8"/>
+      </svg>
+      <text x="125" y="160" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="600" fill="white">local Markdown</text>
+      <text x="125" y="188" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="600" fill="white">files</text>
+    </g>
+
+    <!-- カード4: Complete privacy -->
+    <g transform="translate(825, 0)">
+      <rect x="0" y="0" width="250" height="240" rx="20" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+      <!-- シールドアイコン -->
+      <svg x="85" y="40" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
+        <path d="m9 12 2 2 4-4"/>
+      </svg>
+      <text x="125" y="160" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="600" fill="white">no external</text>
+      <text x="125" y="188" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="600" fill="white">servers</text>
+    </g>
+  </g>
+
+  <!-- X Clipper ロゴ -->
+  <g transform="translate(530, 600)">
+    <!-- 円形背景 -->
+    <circle cx="30" cy="30" r="30" fill="white"/>
+    <!-- クリップアイコン -->
+    <svg x="10" y="10" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551"/>
+    </svg>
+    <text x="80" y="42" font-family="system-ui, -apple-system, sans-serif" font-size="32" font-weight="600" fill="white">X Clipper</text>
+  </g>
+</svg>
