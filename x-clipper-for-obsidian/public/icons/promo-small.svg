@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 280">
+  <defs>
+    <!-- 紫のグラデーション背景（Obsidian風：左下が暗く、右上が明るい） -->
+    <linearGradient id="bgGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#6d28d9"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 背景 -->
+  <rect width="440" height="280" fill="url(#bgGradient)"/>
+
+  <!-- タイトル（左揃え） -->
+  <text x="30" y="120" text-anchor="start" font-family="system-ui, -apple-system, sans-serif" font-size="88" font-weight="700" fill="white">X Clipper</text>
+
+  <!-- サブタイトル（左揃え） -->
+  <text x="30" y="185" text-anchor="start" font-family="system-ui, -apple-system, sans-serif" font-size="44" fill="rgba(255,255,255,0.9)">for Obsidian</text>
+
+  <!-- ペーパークリップアイコン（右下に大きく） -->
+  <svg x="280" y="100" width="160" height="160" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551"/>
+  </svg>
+</svg>
