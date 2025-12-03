@@ -9,6 +9,8 @@ interface QuotedTweetData {
   text: string
   url: string
   authorUsername: string
+  /** 添付画像のURLリスト */
+  images?: string[]
   /** 動画が含まれているか */
   hasVideo?: boolean
   /** アニメーションGIFが含まれているか */
@@ -270,6 +272,20 @@ function extractQuotedTweet(article: Element): QuotedTweetData | undefined {
   const quotedTextElement = quotedContainer.querySelector('[data-testid="tweetText"]')
   const quotedText = quotedTextElement?.textContent ?? ''
 
+  // 引用ツイート内の画像URLを抽出
+  const quotedImages: string[] = []
+  const quotedImageElements = quotedContainer.querySelectorAll('img[src*="pbs.twimg.com/media"]')
+  quotedImageElements.forEach(img => {
+    const src = img.getAttribute('src')
+    if (src) {
+      // 高解像度版のURLに変換
+      const highResUrl = src
+        .replace(/name=\w+/, 'name=large')
+        .replace(/format=webp/, 'format=jpg')
+      quotedImages.push(highResUrl)
+    }
+  })
+
   // 引用ツイート内の動画を検出
   const quotedHasVideo = quotedContainer.querySelector('video') !== null
 
@@ -284,6 +300,7 @@ function extractQuotedTweet(article: Element): QuotedTweetData | undefined {
     text: quotedText,
     url: quotedUrl,
     authorUsername: quotedUsername,
+    images: quotedImages.length > 0 ? quotedImages : undefined,
     hasVideo: quotedHasVideo || undefined,
     hasAnimatedGif: quotedHasAnimatedGif || undefined,
   }

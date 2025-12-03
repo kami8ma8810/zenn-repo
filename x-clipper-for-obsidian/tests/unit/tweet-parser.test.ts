@@ -345,6 +345,63 @@ describe('formatTweetAsMarkdown', () => {
     expect(markdown).toContain('> [!warning]')
     expect(markdown).toContain('このポストには動画とアニメーションGIFが含まれています')
   })
+
+  // === 引用ツイートの画像埋め込みテスト ===
+  it('引用ツイートの画像パスを渡すと引用元セクションに画像が埋め込まれる', () => {
+    const tweetWithQuote: TweetData = {
+      ...mockTweet,
+      quotedTweet: {
+        text: '引用元のツイート内容',
+        url: 'https://x.com/quoted_user/status/9876543210',
+        authorUsername: 'quoted_user',
+      },
+    }
+    const quotedImagePaths = ['quoted-9876543210-1.jpg', 'quoted-9876543210-2.jpg']
+    const markdown = formatTweetAsMarkdown(tweetWithQuote, new Date(), [], [], quotedImagePaths)
+    expect(markdown).toContain('### 引用元')
+    expect(markdown).toContain('![[quoted-9876543210-1.jpg]]')
+    expect(markdown).toContain('![[quoted-9876543210-2.jpg]]')
+  })
+
+  it('引用ツイートの画像と動画警告が両方表示される', () => {
+    const tweetWithQuote: TweetData = {
+      ...mockTweet,
+      quotedTweet: {
+        text: '引用元のツイート内容',
+        url: 'https://x.com/quoted_user/status/9876543210',
+        authorUsername: 'quoted_user',
+        hasVideo: true,
+      },
+    }
+    const quotedImagePaths = ['quoted-9876543210-1.jpg']
+    const markdown = formatTweetAsMarkdown(tweetWithQuote, new Date(), [], [], quotedImagePaths)
+    expect(markdown).toContain('![[quoted-9876543210-1.jpg]]')
+    expect(markdown).toContain('> [!warning]')
+    expect(markdown).toContain('このポストには動画が含まれています')
+  })
+
+  it('メインと引用両方に画像がある場合、それぞれ正しい位置に埋め込まれる', () => {
+    const tweetWithBothImages: TweetData = {
+      ...mockTweet,
+      images: ['https://pbs.twimg.com/media/main.jpg'],
+      quotedTweet: {
+        text: '引用元のツイート内容',
+        url: 'https://x.com/quoted_user/status/9876543210',
+        authorUsername: 'quoted_user',
+      },
+    }
+    const mainImagePaths = ['tweet-1234567890-1.jpg']
+    const quotedImagePaths = ['quoted-9876543210-1.jpg']
+    const markdown = formatTweetAsMarkdown(tweetWithBothImages, new Date(), mainImagePaths, [], quotedImagePaths)
+    // メインツイートの画像
+    expect(markdown).toContain('![[tweet-1234567890-1.jpg]]')
+    // 引用ツイートの画像
+    expect(markdown).toContain('![[quoted-9876543210-1.jpg]]')
+    // 引用元見出しの後に引用画像がある
+    const quotedHeadingIndex = markdown.indexOf('### 引用元')
+    const quotedImageIndex = markdown.indexOf('![[quoted-9876543210-1.jpg]]')
+    expect(quotedImageIndex).toBeGreaterThan(quotedHeadingIndex)
+  })
 })
 
 describe('extractQuotedTweetUrl', () => {

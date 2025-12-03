@@ -8,6 +8,8 @@ interface QuotedTweetData {
   text: string
   url: string
   authorUsername: string
+  /** 添付画像のURLリスト */
+  images?: string[]
   /** 動画が含まれているか */
   hasVideo?: boolean
   /** アニメーションGIFが含まれているか */
@@ -122,6 +124,39 @@ async function saveImagesToObsidian(
 }
 
 /**
+ * 引用ツイートの画像をダウンロードしてObsidianに保存
+ */
+async function saveQuotedImagesToObsidian(
+  imageUrls: string[],
+  quotedUrl: string,
+  folder: string
+): Promise<string[]> {
+  const settings = await getSettings()
+  const savedImagePaths: string[] = []
+
+  // 引用ツイートのIDをURLから抽出
+  const match = quotedUrl.match(/\/status\/(\d+)/)
+  const quotedTweetId = match ? match[1] : 'quoted'
+
+  for (let i = 0; i < imageUrls.length; i++) {
+    const imageUrl = imageUrls[i]
+    try {
+      const imageBlob = await downloadImage(imageUrl)
+      const ext = getImageExtension(imageUrl, imageBlob.type)
+      // 引用ツイートの画像は quoted- プレフィックスをつける
+      const imageFileName = `quoted-${quotedTweetId}-${i + 1}.${ext}`
+      const imagePath = `${folder}/${imageFileName}`
+      await saveImage(imagePath, imageBlob, settings)
+      savedImagePaths.push(imageFileName)
+    } catch (error) {
+      console.error(`Failed to save quoted image ${i + 1}:`, error)
+    }
+  }
+
+  return savedImagePaths
+}
+
+/**
  * ツイートを保存
  * @param url ツイートURL
  * @param folder 保存先フォルダ
@@ -160,18 +195,34 @@ async function handleSaveTweet(url: string, folder: string, tags: string[]): Pro
   const fileName = generateFileName(tweet)
   const fileNameWithoutExt = fileName.replace(/\.md$/, '')
 
-  // 画像がある場合は専用フォルダを作成
+  // 画像がある場合（メインまたは引用）は専用フォルダを作成
+  const hasMainImages = tweet.images.length > 0
+  const hasQuotedImages = (tweet.quotedTweet?.images?.length ?? 0) > 0
   let noteFolder = folder
   let savedImagePaths: string[] = []
+  let quotedSavedImagePaths: string[] = []
 
-  if (tweet.images.length > 0) {
+  if (hasMainImages || hasQuotedImages) {
     // 専用フォルダ: X Clipper/ツイートの出だし/
     noteFolder = `${folder}/${fileNameWithoutExt}`
-    savedImagePaths = await saveImagesToObsidian(tweet, noteFolder)
+
+    // メインツイートの画像を保存
+    if (hasMainImages) {
+      savedImagePaths = await saveImagesToObsidian(tweet, noteFolder)
+    }
+
+    // 引用ツイートの画像を保存
+    if (hasQuotedImages && tweet.quotedTweet?.images) {
+      quotedSavedImagePaths = await saveQuotedImagesToObsidian(
+        tweet.quotedTweet.images,
+        tweet.quotedTweet.url,
+        noteFolder
+      )
+    }
   }
 
   // Markdown形式に変換（保存済み画像パス、タグを渡す）
-  const markdown = formatTweetAsMarkdown(tweet, new Date(), savedImagePaths, tags)
+  const markdown = formatTweetAsMarkdown(tweet, new Date(), savedImagePaths, tags, quotedSavedImagePaths)
 
   // ファイルパスを生成
   const basePath = `${noteFolder}/${fileName}`

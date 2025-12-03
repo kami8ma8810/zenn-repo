@@ -6,6 +6,8 @@ export interface QuotedTweetData {
   url: string
   /** 引用ツイート投稿者のユーザー名（@なし） */
   authorUsername: string
+  /** 添付画像のURLリスト */
+  images?: string[]
   /** 動画が含まれているか（ダウンロード不可） */
   hasVideo?: boolean
   /** アニメーションGIFが含まれているか（ダウンロード不可） */

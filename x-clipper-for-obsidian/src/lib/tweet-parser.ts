@@ -320,12 +320,14 @@ function buildTags(authorUsername: string, inputTags?: string[]): string[] {
  * @param savedAt 保存日時
  * @param savedImagePaths 保存済み画像の相対パス配列（省略時はtweet.imagesから生成）
  * @param tags タグ配列（x-clipperは自動追加される）
+ * @param quotedSavedImagePaths 引用ツイートの保存済み画像パス配列
  */
 export function formatTweetAsMarkdown(
   tweet: TweetData,
   savedAt: Date = new Date(),
   savedImagePaths?: string[],
-  tags?: string[]
+  tags?: string[],
+  quotedSavedImagePaths?: string[]
 ): string {
   // プロフィールページURL
   const profileUrl = `https://x.com/${tweet.authorUsername}`
@@ -450,6 +452,14 @@ export function formatTweetAsMarkdown(
       body.push(`> — @${tweet.quotedTweet.authorUsername}`)
     }
     body.push(`> ${tweet.quotedTweet.url}`)
+
+    // 引用ツイートの画像を埋め込み
+    if (quotedSavedImagePaths && quotedSavedImagePaths.length > 0) {
+      body.push('')
+      quotedSavedImagePaths.forEach(path => {
+        body.push(`![[${path}]]`)
+      })
+    }
 
     // 引用ツイートに動画/GIF がある場合の警告
     if (tweet.quotedTweet.hasVideo && tweet.quotedTweet.hasAnimatedGif) {
