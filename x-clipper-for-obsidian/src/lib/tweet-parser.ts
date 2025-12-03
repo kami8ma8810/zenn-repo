@@ -16,66 +16,42 @@ const EMOJI_REGEX = /\p{Emoji_Presentation}|\p{Extended_Pictographic}/gu
 const PERIOD_REGEX = /[。.]/
 
 /**
- * 区切り位置の候補を表す型
- */
-interface DelimiterPosition {
-  index: number
-  length: number  // 区切り文字自体の長さ（スペースは含めない、絵文字は含める）
-  includeDelimiter: boolean  // 区切り文字をタイトルに含めるか
-}
-
-/**
  * テキストから意味のある区切りでタイトルを抽出
- * 優先順位: 句点（。.） > スペース > 絵文字 の先に来る方
+ * 優先順位: 句点（。.） > 絵文字 の先に来る方
  * @param text 入力テキスト
- * @returns 区切りまでのテキスト
+ * @returns 区切りまでのテキスト（区切り文字を含む）
  */
 function extractTitle(text: string): string {
-  const candidates: DelimiterPosition[] = []
-
   // 句点の位置を探す
   const periodMatch = text.match(PERIOD_REGEX)
-  if (periodMatch) {
-    candidates.push({
-      index: text.indexOf(periodMatch[0]),
-      length: 1,
-      includeDelimiter: true,  // 句点は含める
-    })
-  }
-
-  // スペースの位置を探す
-  const spaceIndex = text.indexOf(' ')
-  if (spaceIndex !== -1) {
-    candidates.push({
-      index: spaceIndex,
-      length: 0,
-      includeDelimiter: false,  // スペースは含めない
-    })
-  }
+  const periodIndex = periodMatch ? text.indexOf(periodMatch[0]) : -1
 
   // 絵文字の位置を探す
   const emojiMatch = text.match(EMOJI_REGEX)
-  if (emojiMatch) {
-    candidates.push({
-      index: text.indexOf(emojiMatch[0]),
-      length: emojiMatch[0].length,
-      includeDelimiter: true,  // 絵文字は含める
-    })
-  }
+  const emojiIndex = emojiMatch ? text.indexOf(emojiMatch[0]) : -1
 
-  // 区切りが見つからない場合は全文を返す
-  if (candidates.length === 0) {
+  // どちらも見つからない場合は全文を返す
+  if (periodIndex === -1 && emojiIndex === -1) {
     return text
   }
 
-  // 最も早く出現する区切りを選択
-  candidates.sort((a, b) => a.index - b.index)
-  const first = candidates[0]
+  // 句点のみ見つかった場合
+  if (periodIndex !== -1 && emojiIndex === -1) {
+    return text.slice(0, periodIndex + 1)
+  }
 
-  if (first.includeDelimiter) {
-    return text.slice(0, first.index + first.length)
+  // 絵文字のみ見つかった場合
+  if (periodIndex === -1 && emojiIndex !== -1) {
+    const emojiLength = emojiMatch![0].length
+    return text.slice(0, emojiIndex + emojiLength)
+  }
+
+  // 両方見つかった場合は先に来る方を優先
+  if (periodIndex <= emojiIndex) {
+    return text.slice(0, periodIndex + 1)
   } else {
-    return text.slice(0, first.index)
+    const emojiLength = emojiMatch![0].length
+    return text.slice(0, emojiIndex + emojiLength)
   }
 }
 

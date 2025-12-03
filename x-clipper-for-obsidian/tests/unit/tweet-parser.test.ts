@@ -322,25 +322,15 @@ describe('generateFileName', () => {
     expect(generateFileName(tweet)).toBe('すごい⭐.md')
   })
 
-  // === スペースでの区切り ===
-  it('スペースで区切る', () => {
+  // === スペースを含むテキスト ===
+  it('スペースを含む英文は全文を使用', () => {
     const tweet = createTweet('Hello world')
-    expect(generateFileName(tweet)).toBe('Hello.md')
+    expect(generateFileName(tweet)).toBe('Hello world.md')
   })
 
-  it('日本語の後のスペースで区切る', () => {
-    const tweet = createTweet('テスト 続きのテキスト')
-    expect(generateFileName(tweet)).toBe('テスト.md')
-  })
-
-  it('スペースが句点より先にあればスペースで区切る', () => {
-    const tweet = createTweet('テスト ここで区切る。句点は後')
-    expect(generateFileName(tweet)).toBe('テスト.md')
-  })
-
-  it('句点がスペースより先にあれば句点で区切る', () => {
-    const tweet = createTweet('テスト。ここで区切る 後はスペース')
-    expect(generateFileName(tweet)).toBe('テスト。.md')
+  it('句点（.）で区切る（スペースを含む英文）', () => {
+    const tweet = createTweet('Hello world. How are you?')
+    expect(generateFileName(tweet)).toBe('Hello world..md')
   })
 })
 
