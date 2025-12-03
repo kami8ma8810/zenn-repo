@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import {
   extractTweetId,
   isValidTweetUrl,
@@ -9,6 +9,23 @@ import {
   generateThreadFileName,
 } from '../../src/lib/tweet-parser'
 import type { TweetData, ThreadData } from '../../src/types'
+
+// chrome.i18n のモック
+vi.stubGlobal('chrome', {
+  i18n: {
+    getMessage: (key: string, substitutions?: string[]) => {
+      const messages: Record<string, string> = {
+        mdPostTitle: substitutions ? `@${substitutions[0]} のポスト` : '',
+        mdThreadTitle: substitutions ? `@${substitutions[0]} のスレッド` : '',
+        mdQuotedSource: '引用元',
+        mdSavedAt: substitutions ? `保存日時: ${substitutions[0]}` : '',
+        mdQuoteUnavailable: '（引用元の内容を取得できませんでした）',
+      }
+      return messages[key] || ''
+    },
+    getUILanguage: () => 'ja',
+  },
+})
 
 describe('extractTweetId', () => {
   it('x.com の status URL からツイートIDを抽出できる', () => {
@@ -216,71 +233,114 @@ describe('extractPostedAtFromTweetId', () => {
 })
 
 describe('generateFileName', () => {
-  it('ツイートの出だし20文字でファイル名を生成する', () => {
-    const tweet: TweetData = {
-      id: '1234567890',
-      text: 'これはテストツイートです。長いテキストの場合は切り詰められます。',
-      authorUsername: 'testuser',
-      authorName: 'Test User',
-      url: 'https://x.com/testuser/status/1234567890',
-      images: [],
-    }
-    const fileName = generateFileName(tweet)
-    // 20文字で切り詰め: 「これはテストツイートです。長いテキストの」
-    expect(fileName).toBe('これはテストツイートです。長いテキストの.md')
+  // ヘルパー関数
+  const createTweet = (text: string): TweetData => ({
+    id: '1234567890',
+    text,
+    authorUsername: 'testuser',
+    authorName: 'Test User',
+    url: 'https://x.com/testuser/status/1234567890',
+    images: [],
   })
 
-  it('20文字以下の場合はそのままファイル名になる', () => {
-    const tweet: TweetData = {
-      id: '1234567890',
-      text: '短いテキスト',
-      authorUsername: 'testuser',
-      authorName: 'Test User',
-      url: 'https://x.com/testuser/status/1234567890',
-      images: [],
-    }
-    const fileName = generateFileName(tweet)
-    expect(fileName).toBe('短いテキスト.md')
+  // === 句点での区切り ===
+  it('句点（。）で区切る', () => {
+    const tweet = createTweet('今日は良い天気。明日も晴れるかな')
+    expect(generateFileName(tweet)).toBe('今日は良い天気。.md')
   })
 
+  it('句点（.）で区切る（スペースなし）', () => {
+    const tweet = createTweet('Hello.World')
+    expect(generateFileName(tweet)).toBe('Hello..md')
+  })
+
+  // === 絵文字での区切り ===
+  it('テキスト＋絵文字で区切る（絵文字を含む）', () => {
+    const tweet = createTweet('こんにちは😊今日はいい天気')
+    expect(generateFileName(tweet)).toBe('こんにちは😊.md')
+  })
+
+  it('複数の絵文字がある場合、最初の絵文字で区切る', () => {
+    const tweet = createTweet('楽しい🎉素敵な🌸一日')
+    expect(generateFileName(tweet)).toBe('楽しい🎉.md')
+  })
+
+  // === 改行での区切り ===
   it('改行がある場合は最初の行のみ使用する', () => {
-    const tweet: TweetData = {
-      id: '1234567890',
-      text: '1行目のテキスト\n2行目のテキスト\n3行目',
-      authorUsername: 'testuser',
-      authorName: 'Test User',
-      url: 'https://x.com/testuser/status/1234567890',
-      images: [],
-    }
-    const fileName = generateFileName(tweet)
-    expect(fileName).toBe('1行目のテキスト.md')
+    const tweet = createTweet('1行目のテキスト\n2行目のテキスト\n3行目')
+    expect(generateFileName(tweet)).toBe('1行目のテキスト.md')
+  })
+
+  // === 区切りなし ===
+  it('区切りがない場合は全文を使用', () => {
+    const tweet = createTweet('区切りなしテキスト')
+    expect(generateFileName(tweet)).toBe('区切りなしテキスト.md')
+  })
+
+  // === 優先順位確認 ===
+  it('句点が絵文字より先にあれば句点で区切る', () => {
+    const tweet = createTweet('テスト。😊これは後')
+    expect(generateFileName(tweet)).toBe('テスト。.md')
+  })
+
+  it('絵文字が句点より先にあれば絵文字で区切る', () => {
+    const tweet = createTweet('テスト😊これは後。')
+    expect(generateFileName(tweet)).toBe('テスト😊.md')
+  })
+
+  // === エッジケース ===
+  it('絵文字のみの場合', () => {
+    const tweet = createTweet('😊😊😊')
+    expect(generateFileName(tweet)).toBe('😊.md')
+  })
+
+  it('先頭が絵文字の場合', () => {
+    const tweet = createTweet('😊こんにちは')
+    expect(generateFileName(tweet)).toBe('😊.md')
   })
 
   it('ファイル名に使えない文字は除去される', () => {
-    const tweet: TweetData = {
-      id: '1234567890',
-      text: 'テスト/パス:名前<>"|?*',
-      authorUsername: 'testuser',
-      authorName: 'Test User',
-      url: 'https://x.com/testuser/status/1234567890',
-      images: [],
-    }
+    const tweet = createTweet('テスト/パス:名前<>"|?*')
     const fileName = generateFileName(tweet)
     expect(fileName).not.toMatch(/[\/:<>"|?*]/)
     expect(fileName).toBe('テストパス名前.md')
   })
 
   it('空白文字のみの場合はツイートIDをファイル名にする', () => {
-    const tweet: TweetData = {
-      id: '1234567890',
-      text: '   ',
-      authorUsername: 'testuser',
-      authorName: 'Test User',
-      url: 'https://x.com/testuser/status/1234567890',
-      images: [],
-    }
-    const fileName = generateFileName(tweet)
-    expect(fileName).toBe('tweet-1234567890.md')
+    const tweet = createTweet('   ')
+    expect(generateFileName(tweet)).toBe('tweet-1234567890.md')
+  })
+
+  // === 追加の絵文字テスト ===
+  it('火の絵文字で区切る', () => {
+    const tweet = createTweet('これはすごい🔥今日のハイライト')
+    expect(generateFileName(tweet)).toBe('これはすごい🔥.md')
+  })
+
+  it('星絵文字で区切る', () => {
+    const tweet = createTweet('すごい⭐今日のハイライト')
+    expect(generateFileName(tweet)).toBe('すごい⭐.md')
+  })
+
+  // === スペースでの区切り ===
+  it('スペースで区切る', () => {
+    const tweet = createTweet('Hello world')
+    expect(generateFileName(tweet)).toBe('Hello.md')
+  })
+
+  it('日本語の後のスペースで区切る', () => {
+    const tweet = createTweet('テスト 続きのテキスト')
+    expect(generateFileName(tweet)).toBe('テスト.md')
+  })
+
+  it('スペースが句点より先にあればスペースで区切る', () => {
+    const tweet = createTweet('テスト ここで区切る。句点は後')
+    expect(generateFileName(tweet)).toBe('テスト.md')
+  })
+
+  it('句点がスペースより先にあれば句点で区切る', () => {
+    const tweet = createTweet('テスト。ここで区切る 後はスペース')
+    expect(generateFileName(tweet)).toBe('テスト。.md')
   })
 })
 
@@ -351,45 +411,40 @@ describe('formatThreadAsMarkdown', () => {
 })
 
 describe('generateThreadFileName', () => {
-  it('最初のツイートの内容からファイル名を生成する', () => {
-    const thread: ThreadData = {
-      authorUsername: 'testuser',
-      authorName: 'Test User',
-      originalUrl: 'https://x.com/testuser/status/123',
-      tweets: [
-        {
-          id: '123',
-          text: 'これはテストツイートです',
-          authorUsername: 'testuser',
-          authorName: 'Test User',
-          url: 'https://x.com/testuser/status/123',
-          images: [],
-        },
-      ],
-    }
-    const fileName = generateThreadFileName(thread)
-    expect(fileName).toBe('これはテストツイートです.md')
+  // ヘルパー関数
+  const createThread = (text: string): ThreadData => ({
+    authorUsername: 'testuser',
+    authorName: 'Test User',
+    originalUrl: 'https://x.com/testuser/status/123',
+    tweets: [
+      {
+        id: '123',
+        text,
+        authorUsername: 'testuser',
+        authorName: 'Test User',
+        url: 'https://x.com/testuser/status/123',
+        images: [],
+      },
+    ],
   })
 
-  it('20文字を超える場合は切り詰める', () => {
-    const thread: ThreadData = {
-      authorUsername: 'testuser',
-      authorName: 'Test User',
-      originalUrl: 'https://x.com/testuser/status/123',
-      tweets: [
-        {
-          id: '123',
-          text: 'これは非常に長いツイートの内容で20文字を超えています',
-          authorUsername: 'testuser',
-          authorName: 'Test User',
-          url: 'https://x.com/testuser/status/123',
-          images: [],
-        },
-      ],
-    }
-    const fileName = generateThreadFileName(thread)
-    // 「これは非常に長いツイートの内容で20文字」で20文字
-    expect(fileName).toBe('これは非常に長いツイートの内容で20文字.md')
-    expect(fileName.replace('.md', '').length).toBe(20)
+  it('最初のツイートの内容からファイル名を生成する', () => {
+    const thread = createThread('これはテストツイートです')
+    expect(generateThreadFileName(thread)).toBe('これはテストツイートです.md')
+  })
+
+  it('句点で区切る', () => {
+    const thread = createThread('スレッドの始まり。続きがあります')
+    expect(generateThreadFileName(thread)).toBe('スレッドの始まり。.md')
+  })
+
+  it('絵文字で区切る', () => {
+    const thread = createThread('楽しいスレッド🎉みんな見てね')
+    expect(generateThreadFileName(thread)).toBe('楽しいスレッド🎉.md')
+  })
+
+  it('区切りがない場合は全文を使用', () => {
+    const thread = createThread('区切りなしスレッド')
+    expect(generateThreadFileName(thread)).toBe('区切りなしスレッド.md')
   })
 })

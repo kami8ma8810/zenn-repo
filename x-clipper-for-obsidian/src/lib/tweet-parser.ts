@@ -1,18 +1,92 @@
 import type { TweetData, ThreadData } from '@/types'
 
-/** ファイル名の最大文字数 */
-const MAX_FILE_NAME_LENGTH = 20
-
 /** ファイル名に使用できない文字のパターン */
 const INVALID_FILE_NAME_CHARS = /[\/\\:<>"|?*]/g
 
 /**
+ * 絵文字を検出する正規表現
+ * Emoji_Presentation: 絵文字として表示される文字
+ * Extended_Pictographic: 絵文字的な記号（より広い範囲）
+ */
+const EMOJI_REGEX = /\p{Emoji_Presentation}|\p{Extended_Pictographic}/gu
+
+/**
+ * 句点（日本語の。と英語の.）を検出する正規表現
+ */
+const PERIOD_REGEX = /[。.]/
+
+/**
+ * 区切り位置の候補を表す型
+ */
+interface DelimiterPosition {
+  index: number
+  length: number  // 区切り文字自体の長さ（スペースは含めない、絵文字は含める）
+  includeDelimiter: boolean  // 区切り文字をタイトルに含めるか
+}
+
+/**
+ * テキストから意味のある区切りでタイトルを抽出
+ * 優先順位: 句点（。.） > スペース > 絵文字 の先に来る方
+ * @param text 入力テキスト
+ * @returns 区切りまでのテキスト
+ */
+function extractTitle(text: string): string {
+  const candidates: DelimiterPosition[] = []
+
+  // 句点の位置を探す
+  const periodMatch = text.match(PERIOD_REGEX)
+  if (periodMatch) {
+    candidates.push({
+      index: text.indexOf(periodMatch[0]),
+      length: 1,
+      includeDelimiter: true,  // 句点は含める
+    })
+  }
+
+  // スペースの位置を探す
+  const spaceIndex = text.indexOf(' ')
+  if (spaceIndex !== -1) {
+    candidates.push({
+      index: spaceIndex,
+      length: 0,
+      includeDelimiter: false,  // スペースは含めない
+    })
+  }
+
+  // 絵文字の位置を探す
+  const emojiMatch = text.match(EMOJI_REGEX)
+  if (emojiMatch) {
+    candidates.push({
+      index: text.indexOf(emojiMatch[0]),
+      length: emojiMatch[0].length,
+      includeDelimiter: true,  // 絵文字は含める
+    })
+  }
+
+  // 区切りが見つからない場合は全文を返す
+  if (candidates.length === 0) {
+    return text
+  }
+
+  // 最も早く出現する区切りを選択
+  candidates.sort((a, b) => a.index - b.index)
+  const first = candidates[0]
+
+  if (first.includeDelimiter) {
+    return text.slice(0, first.index + first.length)
+  } else {
+    return text.slice(0, first.index)
+  }
+}
+
+/**
  * ツイートからファイル名を生成
+ * 区切り優先順位: 句点（。.） > 絵文字 > 改行
  * @param tweet ツイートデータ
  * @returns ファイル名（.md拡張子付き）
  */
 export function generateFileName(tweet: TweetData): string {
-  // 最初の行を取得
+  // 最初の行を取得（改行で区切り）
   const firstLine = tweet.text.split('\n')[0]
 
   // ファイル名に使えない文字を除去
@@ -23,12 +97,10 @@ export function generateFileName(tweet: TweetData): string {
     return `tweet-${tweet.id}.md`
   }
 
-  // 20文字以下の場合はそのまま、それ以上は切り詰め
-  const truncated = sanitized.length <= MAX_FILE_NAME_LENGTH
-    ? sanitized
-    : sanitized.slice(0, MAX_FILE_NAME_LENGTH)
+  // 意味のある区切りでタイトルを抽出
+  const title = extractTitle(sanitized)
 
-  return `${truncated}.md`
+  return `${title}.md`
 }
 
 /**
@@ -513,9 +585,8 @@ export function generateThreadFileName(thread: ThreadData): string {
     return `thread-${firstTweet.id}.md`
   }
 
-  const truncated = sanitized.length <= MAX_FILE_NAME_LENGTH
-    ? sanitized
-    : sanitized.slice(0, MAX_FILE_NAME_LENGTH)
+  // 意味のある区切りでタイトルを抽出
+  const title = extractTitle(sanitized)
 
-  return `${truncated}.md`
+  return `${title}.md`
 }
