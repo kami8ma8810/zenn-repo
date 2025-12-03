@@ -8,6 +8,10 @@ interface TweetImageData {
   tweetId: string
   imageUrls: string[]
   authorBio?: string
+  /** 動画が含まれているか（ダウンロード不可） */
+  hasVideo: boolean
+  /** アニメーションGIFが含まれているか（ダウンロード不可） */
+  hasAnimatedGif: boolean
 }
 
 /**
@@ -211,6 +215,28 @@ function extractTweetImages(): TweetImageData | null {
   // 重複を除去
   const uniqueUrls = [...new Set(imageUrls)]
 
+  // 動画の検出（video タグの存在確認）
+  let hasVideo = false
+  if (targetArticle) {
+    hasVideo = targetArticle.querySelector('video') !== null
+  }
+
+  // アニメーションGIFの検出
+  // X/Twitter では GIF は動画として扱われるが、GIF バッジが表示される
+  let hasAnimatedGif = false
+  if (targetArticle) {
+    // GIF バッジを検出（複数のパターンに対応）
+    // パターン1: aria-label に "GIF" を含む要素
+    const gifBadge = targetArticle.querySelector('[aria-label*="GIF"]')
+    // パターン2: data-testid="tweetGif" 要素
+    const gifTestId = targetArticle.querySelector('[data-testid="tweetGif"]')
+    // パターン3: "GIF" テキストを含むスパン（メディアラベル）
+    const gifLabel = targetArticle.querySelector('[data-testid="tweetPhoto"] span')
+    const hasGifLabel = gifLabel?.textContent?.toUpperCase() === 'GIF'
+
+    hasAnimatedGif = !!(gifBadge || gifTestId || hasGifLabel)
+  }
+
   // BIOを取得（ポスト詳細ページでのみ）
   const authorBio = extractAuthorBio()
 
@@ -218,6 +244,8 @@ function extractTweetImages(): TweetImageData | null {
     tweetId,
     imageUrls: uniqueUrls,
     authorBio,
+    hasVideo,
+    hasAnimatedGif,
   }
 }
 
@@ -307,6 +335,16 @@ function extractTweetFromArticle(article: Element): TweetData | null {
   const timeElement = article.querySelector('time')
   const createdAt = timeElement?.getAttribute('datetime') ?? undefined
 
+  // 動画の検出（video タグの存在確認）
+  const hasVideo = article.querySelector('video') !== null
+
+  // アニメーションGIFの検出
+  const gifBadge = article.querySelector('[aria-label*="GIF"]')
+  const gifTestId = article.querySelector('[data-testid="tweetGif"]')
+  const gifLabel = article.querySelector('[data-testid="tweetPhoto"] span')
+  const hasGifLabel = gifLabel?.textContent?.toUpperCase() === 'GIF'
+  const hasAnimatedGif = !!(gifBadge || gifTestId || hasGifLabel)
+
   // BIOを取得（ポスト詳細ページでのみ）
   const authorBio = extractAuthorBio()
 
@@ -319,6 +357,8 @@ function extractTweetFromArticle(article: Element): TweetData | null {
     url: `https://x.com/${username}/status/${tweetId}`,
     createdAt,
     images: imageUrls,
+    hasVideo,
+    hasAnimatedGif,
   }
 }
 

@@ -20,6 +20,12 @@ vi.stubGlobal('chrome', {
         mdQuotedSource: '引用元',
         mdSavedAt: substitutions ? `保存日時: ${substitutions[0]}` : '',
         mdQuoteUnavailable: '（引用元の内容を取得できませんでした）',
+        mdVideoWarningTitle: 'このポストには動画が含まれています',
+        mdVideoWarningBody: '動画はダウンロードできないため、元のポストをご確認ください。',
+        mdGifWarningTitle: 'このポストにはアニメーションGIFが含まれています',
+        mdGifWarningBody: 'GIFはダウンロードできないため、元のポストをご確認ください。',
+        mdVideoAndGifWarningTitle: 'このポストには動画とアニメーションGIFが含まれています',
+        mdVideoAndGifWarningBody: 'これらのメディアはダウンロードできないため、元のポストをご確認ください。',
       }
       return messages[key] || ''
     },

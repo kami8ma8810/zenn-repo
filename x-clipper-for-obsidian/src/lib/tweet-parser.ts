@@ -193,15 +193,9 @@ export async function fetchTweetViaOEmbed(url: string): Promise<TweetData> {
       const quotedTweet = await fetchQuotedTweetData(quotedTweetUrl)
       tweetData.quotedTweet = quotedTweet
     } catch {
-      // 引用ツイートの取得に失敗した場合、URLだけでも保存
-      console.warn('Failed to fetch quoted tweet:', quotedTweetUrl)
-      const unavailableMsg = chrome.i18n.getMessage('mdQuoteUnavailable')
-        || '（引用元の内容を取得できませんでした）'
-      tweetData.quotedTweet = {
-        text: unavailableMsg,
-        url: quotedTweetUrl,
-        authorUsername: '',
-      }
+      // 引用ツイートの取得に失敗した場合は引用元セクションを表示しない
+      // （本文中のリンクが誤検出された可能性があるため）
+      console.warn('Failed to fetch quoted tweet, skipping:', quotedTweetUrl)
     }
   }
 
