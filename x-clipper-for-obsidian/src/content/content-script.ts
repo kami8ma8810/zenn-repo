@@ -544,15 +544,24 @@ function extractTweetFromArticle(article: Element): TweetData | null {
   const timeElement = article.querySelector('time')
   const createdAt = timeElement?.getAttribute('datetime') ?? undefined
 
-  // 動画の検出（video タグの存在確認）
-  const hasVideo = article.querySelector('video') !== null
+  // 動画の検出（引用コンテナ内は除外）
+  const videoElement = article.querySelector('video')
+  const hasVideo = videoElement !== null && (!quotedContainer || !quotedContainer.contains(videoElement))
 
-  // アニメーションGIFの検出
+  // アニメーションGIFの検出（引用コンテナ内は除外）
   const gifBadge = article.querySelector('[aria-label*="GIF"]')
   const gifTestId = article.querySelector('[data-testid="tweetGif"]')
   const gifLabel = article.querySelector('[data-testid="tweetPhoto"] span')
-  const hasGifLabel = gifLabel?.textContent?.toUpperCase() === 'GIF'
-  const hasAnimatedGif = !!(gifBadge || gifTestId || hasGifLabel)
+
+  const isGifBadgeInQuote = gifBadge && quotedContainer?.contains(gifBadge)
+  const isGifTestIdInQuote = gifTestId && quotedContainer?.contains(gifTestId)
+  const isGifLabelInQuote = gifLabel && quotedContainer?.contains(gifLabel)
+
+  const hasGifBadge = gifBadge && !isGifBadgeInQuote
+  const hasGifTestId = gifTestId && !isGifTestIdInQuote
+  const hasGifLabel = gifLabel && !isGifLabelInQuote && gifLabel.textContent?.toUpperCase() === 'GIF'
+
+  const hasAnimatedGif = !!(hasGifBadge || hasGifTestId || hasGifLabel)
 
   // BIOを取得（ポスト詳細ページでのみ）
   const authorBio = extractAuthorBio()
