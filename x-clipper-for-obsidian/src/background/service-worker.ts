@@ -8,6 +8,10 @@ interface TweetImageData {
   tweetId: string
   imageUrls: string[]
   authorBio?: string
+  /** 動画が含まれているか */
+  hasVideo: boolean
+  /** アニメーションGIFが含まれているか */
+  hasAnimatedGif: boolean
 }
 
 /**
@@ -126,6 +130,13 @@ async function handleSaveTweet(url: string, folder: string, tags: string[]): Pro
   // BIOが取得できた場合はセット（ポスト詳細ページでのみ取得される）
   if (imageData?.authorBio) {
     tweet.authorBio = imageData.authorBio
+  }
+  // 動画/GIF 情報をセット
+  if (imageData?.hasVideo) {
+    tweet.hasVideo = true
+  }
+  if (imageData?.hasAnimatedGif) {
+    tweet.hasAnimatedGif = true
   }
 
   // ファイル名を生成（ツイートの出だし20文字）

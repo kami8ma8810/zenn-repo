@@ -190,6 +190,67 @@ describe('formatTweetAsMarkdown', () => {
     expect(markdown).toContain('https://x.com/quoted_user/status/9876543210')
     expect(markdown).toContain('@quoted_user')
   })
+
+  // === 動画/GIF 警告のテスト ===
+  it('動画がある場合、フロントマターに has_video: true が含まれる', () => {
+    const tweetWithVideo: TweetData = {
+      ...mockTweet,
+      hasVideo: true,
+    }
+    const markdown = formatTweetAsMarkdown(tweetWithVideo)
+    expect(markdown).toContain('has_video: true')
+  })
+
+  it('GIF がある場合、フロントマターに has_animated_gif: true が含まれる', () => {
+    const tweetWithGif: TweetData = {
+      ...mockTweet,
+      hasAnimatedGif: true,
+    }
+    const markdown = formatTweetAsMarkdown(tweetWithGif)
+    expect(markdown).toContain('has_animated_gif: true')
+  })
+
+  it('動画がある場合、Obsidian Callout 形式の警告が含まれる', () => {
+    const tweetWithVideo: TweetData = {
+      ...mockTweet,
+      hasVideo: true,
+    }
+    const markdown = formatTweetAsMarkdown(tweetWithVideo)
+    expect(markdown).toContain('> [!warning]')
+    expect(markdown).toContain('このポストには動画が含まれています')
+    expect(markdown).toContain('動画はダウンロードできないため、元のポストをご確認ください。')
+  })
+
+  it('GIF がある場合、Obsidian Callout 形式の警告が含まれる', () => {
+    const tweetWithGif: TweetData = {
+      ...mockTweet,
+      hasAnimatedGif: true,
+    }
+    const markdown = formatTweetAsMarkdown(tweetWithGif)
+    expect(markdown).toContain('> [!warning]')
+    expect(markdown).toContain('このポストにはアニメーションGIFが含まれています')
+    expect(markdown).toContain('GIFはダウンロードできないため、元のポストをご確認ください。')
+  })
+
+  it('動画とGIF両方がある場合、両方の情報がフロントマターに含まれる', () => {
+    const tweetWithBoth: TweetData = {
+      ...mockTweet,
+      hasVideo: true,
+      hasAnimatedGif: true,
+    }
+    const markdown = formatTweetAsMarkdown(tweetWithBoth)
+    expect(markdown).toContain('has_video: true')
+    expect(markdown).toContain('has_animated_gif: true')
+    expect(markdown).toContain('> [!warning]')
+    expect(markdown).toContain('このポストには動画とアニメーションGIFが含まれています')
+  })
+
+  it('動画/GIF がない場合、警告は含まれない', () => {
+    const markdown = formatTweetAsMarkdown(mockTweet)
+    expect(markdown).not.toContain('has_video:')
+    expect(markdown).not.toContain('has_animated_gif:')
+    expect(markdown).not.toContain('> [!warning]')
+  })
 })
 
 describe('extractQuotedTweetUrl', () => {
@@ -200,10 +261,10 @@ describe('extractQuotedTweetUrl', () => {
     expect(url).toBe('https://twitter.com/quoted_user/status/9876543210')
   })
 
-  it('t.co短縮URLを抽出できる', () => {
+  it('t.co短縮URLのみの場合はnullを返す（誤検出防止）', () => {
     const html = `<blockquote class="twitter-tweet"><p>メインツイート <a href="https://t.co/LxVZpoQtHl">https://t.co/LxVZpoQtHl</a></p></blockquote>`
     const url = extractQuotedTweetUrl(html)
-    expect(url).toBe('https://t.co/LxVZpoQtHl')
+    expect(url).toBeNull()
   })
 
   it('引用がない場合はnullを返す', () => {

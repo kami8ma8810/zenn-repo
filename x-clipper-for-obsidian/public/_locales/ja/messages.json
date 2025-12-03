@@ -224,5 +224,29 @@
   "mdQuoteUnavailable": {
     "message": "（引用元の内容を取得できませんでした）",
     "description": "Message when quoted tweet content is unavailable"
+  },
+  "mdVideoWarningTitle": {
+    "message": "このポストには動画が含まれています",
+    "description": "Warning callout title for posts with video"
+  },
+  "mdVideoWarningBody": {
+    "message": "動画はダウンロードできないため、元のポストをご確認ください。",
+    "description": "Warning callout body for posts with video"
+  },
+  "mdGifWarningTitle": {
+    "message": "このポストにはアニメーションGIFが含まれています",
+    "description": "Warning callout title for posts with animated GIF"
+  },
+  "mdGifWarningBody": {
+    "message": "GIFはダウンロードできないため、元のポストをご確認ください。",
+    "description": "Warning callout body for posts with animated GIF"
+  },
+  "mdVideoAndGifWarningTitle": {
+    "message": "このポストには動画とアニメーションGIFが含まれています",
+    "description": "Warning callout title for posts with both video and animated GIF"
+  },
+  "mdVideoAndGifWarningBody": {
+    "message": "これらのメディアはダウンロードできないため、元のポストをご確認ください。",
+    "description": "Warning callout body for posts with both video and animated GIF"
   }
 }

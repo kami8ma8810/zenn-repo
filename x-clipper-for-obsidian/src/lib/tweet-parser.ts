@@ -271,25 +271,17 @@ function extractTextFromOEmbedHtml(html: string): string {
 
 /**
  * oEmbed HTMLから引用ツイートのURLを抽出
+ * 完全な twitter.com/x.com URL のみを検出する（t.co URL は誤検出の原因になるため除外）
  * @param html oEmbed API から返された HTML
  * @returns 引用ツイートのURL または null
  */
 export function extractQuotedTweetUrl(html: string): string | null {
-  // 方法1: 完全なTwitter/X URLを探す
+  // 完全なTwitter/X URLを探す
+  // t.co 短縮URLは通常のリンクと区別できないため、完全なURLのみを対象とする
   const fullUrlPattern = /<a\s+href="(https:\/\/(?:twitter\.com|x\.com)\/\w+\/status\/\d+)"[^>]*>/gi
   const fullMatches = [...html.matchAll(fullUrlPattern)]
   if (fullMatches.length > 0) {
     return fullMatches[fullMatches.length - 1][1]
-  }
-
-  // 方法2: t.co 短縮URLを探す（引用ツイートの場合によくある）
-  // blockquote内のテキストに含まれるt.co URLを探す
-  const tcoPattern = /<a\s+href="(https:\/\/t\.co\/[A-Za-z0-9]+)"[^>]*>/gi
-  const tcoMatches = [...html.matchAll(tcoPattern)]
-
-  // t.co URLがあれば最後のものを返す（通常、引用ツイートは最後に配置される）
-  if (tcoMatches.length > 0) {
-    return tcoMatches[tcoMatches.length - 1][1]
   }
 
   return null
@@ -371,6 +363,16 @@ export function formatTweetAsMarkdown(
     frontmatterLines.push(`quoted_url: "${tweet.quotedTweet.url}"`)
   }
 
+  // 動画がある場合
+  if (tweet.hasVideo) {
+    frontmatterLines.push(`has_video: true`)
+  }
+
+  // アニメーションGIFがある場合
+  if (tweet.hasAnimatedGif) {
+    frontmatterLines.push(`has_animated_gif: true`)
+  }
+
   // タグを処理: x-clipperを先頭に、重複を除去、空文字を除外
   // YAMLで@などの特殊文字を含む場合はクォートが必要
   const processedTags = buildTags(tweet.authorUsername, tags)
@@ -399,6 +401,36 @@ export function formatTweetAsMarkdown(
     imagePaths.forEach(path => {
       body.push(`![[${path}]]`)
     })
+  }
+
+  // 動画/GIF の警告を Obsidian Callout 形式で追加
+  if (tweet.hasVideo && tweet.hasAnimatedGif) {
+    // 動画とGIF両方がある場合
+    const warningTitle = chrome.i18n.getMessage('mdVideoAndGifWarningTitle')
+      || 'このポストには動画とアニメーションGIFが含まれています'
+    const warningBody = chrome.i18n.getMessage('mdVideoAndGifWarningBody')
+      || 'これらのメディアはダウンロードできないため、元のポストをご確認ください。'
+    body.push('')
+    body.push(`> [!warning] ${warningTitle}`)
+    body.push(`> ${warningBody}`)
+  } else if (tweet.hasVideo) {
+    // 動画のみの場合
+    const warningTitle = chrome.i18n.getMessage('mdVideoWarningTitle')
+      || 'このポストには動画が含まれています'
+    const warningBody = chrome.i18n.getMessage('mdVideoWarningBody')
+      || '動画はダウンロードできないため、元のポストをご確認ください。'
+    body.push('')
+    body.push(`> [!warning] ${warningTitle}`)
+    body.push(`> ${warningBody}`)
+  } else if (tweet.hasAnimatedGif) {
+    // GIFのみの場合
+    const warningTitle = chrome.i18n.getMessage('mdGifWarningTitle')
+      || 'このポストにはアニメーションGIFが含まれています'
+    const warningBody = chrome.i18n.getMessage('mdGifWarningBody')
+      || 'GIFはダウンロードできないため、元のポストをご確認ください。'
+    body.push('')
+    body.push(`> [!warning] ${warningTitle}`)
+    body.push(`> ${warningBody}`)
   }
 
   // 引用ツイートがある場合

@@ -224,5 +224,29 @@
   "mdQuoteUnavailable": {
     "message": "(Quoted content unavailable)",
     "description": "Message when quoted tweet content is unavailable"
+  },
+  "mdVideoWarningTitle": {
+    "message": "This post contains a video",
+    "description": "Warning callout title for posts with video"
+  },
+  "mdVideoWarningBody": {
+    "message": "Videos cannot be downloaded. Please check the original post.",
+    "description": "Warning callout body for posts with video"
+  },
+  "mdGifWarningTitle": {
+    "message": "This post contains an animated GIF",
+    "description": "Warning callout title for posts with animated GIF"
+  },
+  "mdGifWarningBody": {
+    "message": "GIFs cannot be downloaded. Please check the original post.",
+    "description": "Warning callout body for posts with animated GIF"
+  },
+  "mdVideoAndGifWarningTitle": {
+    "message": "This post contains video and animated GIF",
+    "description": "Warning callout title for posts with both video and animated GIF"
+  },
+  "mdVideoAndGifWarningBody": {
+    "message": "These media cannot be downloaded. Please check the original post.",
+    "description": "Warning callout body for posts with both video and animated GIF"
   }
 }
