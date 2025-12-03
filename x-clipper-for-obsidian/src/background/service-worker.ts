@@ -8,6 +8,10 @@ interface QuotedTweetData {
   text: string
   url: string
   authorUsername: string
+  /** 動画が含まれているか */
+  hasVideo?: boolean
+  /** アニメーションGIFが含まれているか */
+  hasAnimatedGif?: boolean
 }
 
 /** Content Script から返される画像データ */

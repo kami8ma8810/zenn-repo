@@ -9,6 +9,10 @@ interface QuotedTweetData {
   text: string
   url: string
   authorUsername: string
+  /** 動画が含まれているか */
+  hasVideo?: boolean
+  /** アニメーションGIFが含まれているか */
+  hasAnimatedGif?: boolean
 }
 
 interface TweetImageData {
@@ -266,10 +270,22 @@ function extractQuotedTweet(article: Element): QuotedTweetData | undefined {
   const quotedTextElement = quotedContainer.querySelector('[data-testid="tweetText"]')
   const quotedText = quotedTextElement?.textContent ?? ''
 
+  // 引用ツイート内の動画を検出
+  const quotedHasVideo = quotedContainer.querySelector('video') !== null
+
+  // 引用ツイート内のGIFを検出
+  const quotedGifBadge = quotedContainer.querySelector('[aria-label*="GIF"]')
+  const quotedGifTestId = quotedContainer.querySelector('[data-testid="tweetGif"]')
+  const quotedGifLabel = quotedContainer.querySelector('[data-testid="tweetPhoto"] span')
+  const quotedHasGifLabel = quotedGifLabel?.textContent?.toUpperCase() === 'GIF'
+  const quotedHasAnimatedGif = !!(quotedGifBadge || quotedGifTestId || quotedHasGifLabel)
+
   return {
     text: quotedText,
     url: quotedUrl,
     authorUsername: quotedUsername,
+    hasVideo: quotedHasVideo || undefined,
+    hasAnimatedGif: quotedHasAnimatedGif || undefined,
   }
 }
 
@@ -346,33 +362,58 @@ function extractTweetImages(): TweetImageData | null {
   // 重複を除去
   const uniqueUrls = [...new Set(imageUrls)]
 
-  // 動画の検出（video タグの存在確認）
-  let hasVideo = false
+  // 引用ツイートを先に取得（動画/GIF検出で除外するため）
+  const quotedTweet = targetArticle ? extractQuotedTweet(targetArticle) : undefined
+
+  // 引用ツイートのコンテナを特定（メインツイートの動画/GIF検出で除外するため）
+  let quotedContainer: Element | null = null
   if (targetArticle) {
-    hasVideo = targetArticle.querySelector('video') !== null
+    const linkRoles = targetArticle.querySelectorAll('[role="link"]')
+    for (const linkRole of linkRoles) {
+      if (linkRole.querySelector('[data-testid="tweetText"]')) {
+        quotedContainer = linkRole
+        break
+      }
+    }
+    if (!quotedContainer) {
+      quotedContainer = targetArticle.querySelector('[data-testid="quoteTweet"]')
+        ?? targetArticle.querySelector('[data-testid="card.wrapper"]')
+    }
   }
 
-  // アニメーションGIFの検出
-  // X/Twitter では GIF は動画として扱われるが、GIF バッジが表示される
+  // 動画の検出（メインツイートのみ - 引用ツイート内は除外）
+  let hasVideo = false
+  if (targetArticle) {
+    const videos = targetArticle.querySelectorAll('video')
+    for (const video of videos) {
+      // 引用ツイートのコンテナ内でなければメインツイートの動画
+      if (!quotedContainer || !quotedContainer.contains(video)) {
+        hasVideo = true
+        break
+      }
+    }
+  }
+
+  // アニメーションGIFの検出（メインツイートのみ - 引用ツイート内は除外）
   let hasAnimatedGif = false
   if (targetArticle) {
     // GIF バッジを検出（複数のパターンに対応）
-    // パターン1: aria-label に "GIF" を含む要素
     const gifBadge = targetArticle.querySelector('[aria-label*="GIF"]')
-    // パターン2: data-testid="tweetGif" 要素
     const gifTestId = targetArticle.querySelector('[data-testid="tweetGif"]')
-    // パターン3: "GIF" テキストを含むスパン（メディアラベル）
     const gifLabel = targetArticle.querySelector('[data-testid="tweetPhoto"] span')
     const hasGifLabel = gifLabel?.textContent?.toUpperCase() === 'GIF'
 
-    hasAnimatedGif = !!(gifBadge || gifTestId || hasGifLabel)
+    // 引用ツイート内でないか確認
+    const isInQuote = (el: Element | null) => el && quotedContainer?.contains(el)
+    if ((gifBadge && !isInQuote(gifBadge)) ||
+        (gifTestId && !isInQuote(gifTestId)) ||
+        (hasGifLabel && gifLabel && !isInQuote(gifLabel))) {
+      hasAnimatedGif = true
+    }
   }
 
   // BIOを取得（ポスト詳細ページでのみ）
   const authorBio = extractAuthorBio()
-
-  // 引用ツイートを取得
-  const quotedTweet = targetArticle ? extractQuotedTweet(targetArticle) : undefined
 
   return {
     tweetId,

@@ -450,6 +450,33 @@ export function formatTweetAsMarkdown(
       body.push(`> — @${tweet.quotedTweet.authorUsername}`)
     }
     body.push(`> ${tweet.quotedTweet.url}`)
+
+    // 引用ツイートに動画/GIF がある場合の警告
+    if (tweet.quotedTweet.hasVideo && tweet.quotedTweet.hasAnimatedGif) {
+      const warningTitle = chrome.i18n.getMessage('mdVideoAndGifWarningTitle')
+        || 'このポストには動画とアニメーションGIFが含まれています'
+      const warningBody = chrome.i18n.getMessage('mdVideoAndGifWarningBody')
+        || 'これらのメディアはダウンロードできないため、元のポストをご確認ください。'
+      body.push('')
+      body.push(`> [!warning] ${warningTitle}`)
+      body.push(`> ${warningBody}`)
+    } else if (tweet.quotedTweet.hasVideo) {
+      const warningTitle = chrome.i18n.getMessage('mdVideoWarningTitle')
+        || 'このポストには動画が含まれています'
+      const warningBody = chrome.i18n.getMessage('mdVideoWarningBody')
+        || '動画はダウンロードできないため、元のポストをご確認ください。'
+      body.push('')
+      body.push(`> [!warning] ${warningTitle}`)
+      body.push(`> ${warningBody}`)
+    } else if (tweet.quotedTweet.hasAnimatedGif) {
+      const warningTitle = chrome.i18n.getMessage('mdGifWarningTitle')
+        || 'このポストにはアニメーションGIFが含まれています'
+      const warningBody = chrome.i18n.getMessage('mdGifWarningBody')
+        || 'GIFはダウンロードできないため、元のポストをご確認ください。'
+      body.push('')
+      body.push(`> [!warning] ${warningTitle}`)
+      body.push(`> ${warningBody}`)
+    }
   }
 
   // ロケールに応じた日時フォーマット

@@ -251,6 +251,100 @@ describe('formatTweetAsMarkdown', () => {
     expect(markdown).not.toContain('has_animated_gif:')
     expect(markdown).not.toContain('> [!warning]')
   })
+
+  // === 引用ツイートの動画/GIF 警告のテスト ===
+  it('引用ツイートのみに動画がある場合、引用元セクションに警告が表示される', () => {
+    const tweetWithQuotedVideo: TweetData = {
+      ...mockTweet,
+      quotedTweet: {
+        text: '引用元のツイート内容',
+        url: 'https://x.com/quoted_user/status/9876543210',
+        authorUsername: 'quoted_user',
+        hasVideo: true,
+      },
+    }
+    const markdown = formatTweetAsMarkdown(tweetWithQuotedVideo)
+    // メインツイートには警告がない
+    expect(markdown).not.toContain('has_video: true')
+    // 引用元セクションに警告がある
+    expect(markdown).toContain('### 引用元')
+    expect(markdown).toContain('> [!warning]')
+    expect(markdown).toContain('このポストには動画が含まれています')
+  })
+
+  it('引用ツイートのみにGIFがある場合、引用元セクションに警告が表示される', () => {
+    const tweetWithQuotedGif: TweetData = {
+      ...mockTweet,
+      quotedTweet: {
+        text: '引用元のツイート内容',
+        url: 'https://x.com/quoted_user/status/9876543210',
+        authorUsername: 'quoted_user',
+        hasAnimatedGif: true,
+      },
+    }
+    const markdown = formatTweetAsMarkdown(tweetWithQuotedGif)
+    expect(markdown).not.toContain('has_animated_gif: true')
+    expect(markdown).toContain('### 引用元')
+    expect(markdown).toContain('> [!warning]')
+    expect(markdown).toContain('このポストにはアニメーションGIFが含まれています')
+  })
+
+  it('メインツイートと引用ツイート両方に動画がある場合、両方に警告が表示される', () => {
+    const tweetWithBothVideo: TweetData = {
+      ...mockTweet,
+      hasVideo: true,
+      quotedTweet: {
+        text: '引用元のツイート内容',
+        url: 'https://x.com/quoted_user/status/9876543210',
+        authorUsername: 'quoted_user',
+        hasVideo: true,
+      },
+    }
+    const markdown = formatTweetAsMarkdown(tweetWithBothVideo)
+    // メインツイートの警告
+    expect(markdown).toContain('has_video: true')
+    // 警告が2回出現する（メインと引用元）
+    const warningCount = (markdown.match(/> \[!warning\]/g) || []).length
+    expect(warningCount).toBe(2)
+  })
+
+  it('メインに動画、引用にGIFがある場合、それぞれ適切な警告が表示される', () => {
+    const tweetWithMixedMedia: TweetData = {
+      ...mockTweet,
+      hasVideo: true,
+      quotedTweet: {
+        text: '引用元のツイート内容',
+        url: 'https://x.com/quoted_user/status/9876543210',
+        authorUsername: 'quoted_user',
+        hasAnimatedGif: true,
+      },
+    }
+    const markdown = formatTweetAsMarkdown(tweetWithMixedMedia)
+    expect(markdown).toContain('has_video: true')
+    // 警告が2回出現する
+    const warningCount = (markdown.match(/> \[!warning\]/g) || []).length
+    expect(warningCount).toBe(2)
+    // 両方のメッセージが含まれる
+    expect(markdown).toContain('このポストには動画が含まれています')
+    expect(markdown).toContain('このポストにはアニメーションGIFが含まれています')
+  })
+
+  it('引用ツイートに動画とGIF両方がある場合、引用元セクションに複合警告が表示される', () => {
+    const tweetWithQuotedBoth: TweetData = {
+      ...mockTweet,
+      quotedTweet: {
+        text: '引用元のツイート内容',
+        url: 'https://x.com/quoted_user/status/9876543210',
+        authorUsername: 'quoted_user',
+        hasVideo: true,
+        hasAnimatedGif: true,
+      },
+    }
+    const markdown = formatTweetAsMarkdown(tweetWithQuotedBoth)
+    expect(markdown).toContain('### 引用元')
+    expect(markdown).toContain('> [!warning]')
+    expect(markdown).toContain('このポストには動画とアニメーションGIFが含まれています')
+  })
 })
 
 describe('extractQuotedTweetUrl', () => {
