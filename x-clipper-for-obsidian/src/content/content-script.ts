@@ -152,54 +152,119 @@ function extractAuthorBio(): string | undefined {
 }
 
 /**
+ * React Fiber から引用ツイートの URL を取得
+ * X/Twitter は引用ツイートの URL を React の内部状態に保持している
+ */
+function getQuotedUrlFromReactFiber(element: Element): string | undefined {
+  // React Fiber キーを探す
+  const keys = Object.keys(element)
+  const fiberKey = keys.find(key => key.startsWith('__reactFiber'))
+
+  if (!fiberKey) {
+    return undefined
+  }
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fiber = (element as any)[fiberKey]
+    // fiber.return.memoizedProps.link.pathname に URL がある
+    const link = fiber?.return?.memoizedProps?.link
+    if (link?.pathname) {
+      // twitter.com を x.com に統一
+      return link.pathname.replace('twitter.com', 'x.com')
+    }
+  } catch {
+    // React Fiber へのアクセスに失敗した場合は無視
+  }
+
+  return undefined
+}
+
+/**
  * 引用ツイートを抽出
  * @param article メインツイートの article 要素
  * @returns 引用ツイートの情報、または undefined
  */
 function extractQuotedTweet(article: Element): QuotedTweetData | undefined {
-  // 引用ツイートのコンテナを探す
-  // X/Twitter では引用ツイートは様々な data-testid で表示される
-  const quoteTweetContainer = article.querySelector('[data-testid="quoteTweet"]')
-    ?? article.querySelector('[data-testid="card.wrapper"]')
+  // 方法1: role="link" で tweetText を含む要素を探す（引用ツイートのコンテナ）
+  const linkRoles = article.querySelectorAll('[role="link"]')
+  let quotedContainer: Element | null = null
 
-  if (!quoteTweetContainer) {
-    return undefined
-  }
-
-  // 引用ツイートへのリンク（/status/ を含む）を探す
-  const statusLinks = quoteTweetContainer.querySelectorAll('a[href*="/status/"]')
-  let quotedUrl = ''
-  let quotedUsername = ''
-
-  for (const link of statusLinks) {
-    const href = link.getAttribute('href')
-    const match = href?.match(/\/([^/]+)\/status\/(\d+)/)
-    if (match) {
-      quotedUsername = match[1]
-      const tweetId = match[2]
-      quotedUrl = `https://x.com/${quotedUsername}/status/${tweetId}`
+  for (const linkRole of linkRoles) {
+    // tweetText を含む role="link" 要素を探す
+    if (linkRole.querySelector('[data-testid="tweetText"]')) {
+      quotedContainer = linkRole
       break
     }
   }
 
+  // 方法2: フォールバック - 従来の方法
+  if (!quotedContainer) {
+    quotedContainer = article.querySelector('[data-testid="quoteTweet"]')
+      ?? article.querySelector('[data-testid="card.wrapper"]')
+  }
+
+  if (!quotedContainer) {
+    return undefined
+  }
+
+  // React Fiber から URL を取得
+  let quotedUrl = getQuotedUrlFromReactFiber(quotedContainer) ?? ''
+
+  // URL からユーザー名を抽出
+  let quotedUsername = ''
+  const urlMatch = quotedUrl.match(/\/([^/]+)\/status\/(\d+)/)
+  if (urlMatch) {
+    quotedUsername = urlMatch[1]
+  }
+
+  // URL が取得できなかった場合、DOM から探す
   if (!quotedUrl) {
+    const statusLinks = quotedContainer.querySelectorAll('a[href*="/status/"]')
+    for (const link of statusLinks) {
+      const href = link.getAttribute('href')
+      const match = href?.match(/\/([^/]+)\/status\/(\d+)/)
+      if (match) {
+        quotedUsername = match[1]
+        const tweetId = match[2]
+        quotedUrl = `https://x.com/${quotedUsername}/status/${tweetId}`
+        break
+      }
+    }
+  }
+
+  // ユーザー名が取得できなかった場合、UserAvatar-Container から取得
+  if (!quotedUsername) {
+    const avatarContainer = quotedContainer.querySelector('[data-testid^="UserAvatar-Container-"]')
+    if (avatarContainer) {
+      const testId = avatarContainer.getAttribute('data-testid')
+      const match = testId?.match(/UserAvatar-Container-(.+)/)
+      if (match) {
+        quotedUsername = match[1]
+      }
+    }
+  }
+
+  // ユーザー名がまだ取得できない場合、User-Name 内の @username を探す
+  if (!quotedUsername) {
+    const userNameElement = quotedContainer.querySelector('[data-testid="User-Name"]')
+    if (userNameElement) {
+      const text = userNameElement.textContent ?? ''
+      const match = text.match(/@(\w+)/)
+      if (match) {
+        quotedUsername = match[1]
+      }
+    }
+  }
+
+  // URL もユーザー名も取得できなかった場合は undefined
+  if (!quotedUrl && !quotedUsername) {
     return undefined
   }
 
   // 引用ツイートのテキストを取得
-  // 引用ツイート内の tweetText 要素を探す
-  const quotedTextElement = quoteTweetContainer.querySelector('[data-testid="tweetText"]')
+  const quotedTextElement = quotedContainer.querySelector('[data-testid="tweetText"]')
   const quotedText = quotedTextElement?.textContent ?? ''
-
-  // ユーザー名をリンクから取得できなかった場合、User-Name から取得
-  if (!quotedUsername) {
-    const userNameElement = quoteTweetContainer.querySelector('[data-testid="User-Name"]')
-    const usernameLink = userNameElement?.querySelector('a[href^="/"]')
-    if (usernameLink) {
-      const href = usernameLink.getAttribute('href')
-      quotedUsername = href?.replace('/', '') ?? ''
-    }
-  }
 
   return {
     text: quotedText,
