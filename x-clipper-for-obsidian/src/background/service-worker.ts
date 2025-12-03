@@ -7,6 +7,7 @@ import type { MessageType, TweetData, ThreadData, ThreadExtractionResult } from 
 interface TweetImageData {
   tweetId: string
   imageUrls: string[]
+  authorBio?: string
 }
 
 /**
@@ -116,10 +117,15 @@ async function handleSaveTweet(url: string, folder: string, tags: string[]): Pro
   // ツイートデータを取得
   const tweet = await fetchTweetViaOEmbed(url)
 
-  // Content Scriptから画像URLを取得（可能であれば）
+  // Content Scriptから画像URLとBIOを取得（可能であれば）
   const imageData = await getImagesFromContentScript()
+
   if (imageData?.imageUrls && imageData.imageUrls.length > 0) {
     tweet.images = imageData.imageUrls
+  }
+  // BIOが取得できた場合はセット（ポスト詳細ページでのみ取得される）
+  if (imageData?.authorBio) {
+    tweet.authorBio = imageData.authorBio
   }
 
   // ファイル名を生成（ツイートの出だし20文字）

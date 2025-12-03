@@ -147,8 +147,10 @@ export async function fetchTweetViaOEmbed(url: string): Promise<TweetData> {
     } catch {
       // 引用ツイートの取得に失敗した場合、URLだけでも保存
       console.warn('Failed to fetch quoted tweet:', quotedTweetUrl)
+      const unavailableMsg = chrome.i18n.getMessage('mdQuoteUnavailable')
+        || '（引用元の内容を取得できませんでした）'
       tweetData.quotedTweet = {
-        text: '（引用元の内容を取得できませんでした）',
+        text: unavailableMsg,
         url: quotedTweetUrl,
         authorUsername: '',
       }
@@ -301,11 +303,19 @@ export function formatTweetAsMarkdown(
     '---',
     `author_name: "${tweet.authorName}"`,
     `author_url: "${profileUrl}"`,
-    `posted_at: ${postedAt?.toISOString() ?? 'unknown'}`,
-    `saved_at: ${savedAt.toISOString()}`,
-    `original_url: ${tweet.url}`,
-    `post_id: "${tweet.id}"`,
   ]
+
+  // BIOがある場合（ポスト詳細ページで取得できた場合のみ）
+  if (tweet.authorBio) {
+    // BIOに含まれる改行やダブルクォートをエスケープ
+    const escapedBio = tweet.authorBio.replace(/"/g, '\\"').replace(/\n/g, ' ')
+    frontmatterLines.push(`author_bio: "${escapedBio}"`)
+  }
+
+  frontmatterLines.push(`posted_at: ${postedAt?.toISOString() ?? 'unknown'}`)
+  frontmatterLines.push(`saved_at: ${savedAt.toISOString()}`)
+  frontmatterLines.push(`original_url: ${tweet.url}`)
+  frontmatterLines.push(`post_id: "${tweet.id}"`)
 
   // 画像がある場合
   if (tweet.images.length > 0) {
@@ -328,9 +338,13 @@ export function formatTweetAsMarkdown(
 
   const frontmatter = frontmatterLines.join('\n')
 
+  // i18n でタイトルと保存日時のテキストを取得
+  const postTitle = chrome.i18n.getMessage('mdPostTitle', [tweet.authorUsername])
+    || `@${tweet.authorUsername} のポスト`
+
   const body = [
     '',
-    `# @${tweet.authorUsername} のポスト`,
+    `# ${postTitle}`,
     '',
     tweet.text,
     '',
@@ -347,8 +361,9 @@ export function formatTweetAsMarkdown(
 
   // 引用ツイートがある場合
   if (tweet.quotedTweet) {
+    const quotedHeading = chrome.i18n.getMessage('mdQuotedSource') || '引用元'
     body.push('')
-    body.push('### 引用元')
+    body.push(`### ${quotedHeading}`)
     body.push('')
     // 引用ツイートの内容をブロッククォートで表示
     const quotedLines = tweet.quotedTweet.text.split('\n')
@@ -363,9 +378,16 @@ export function formatTweetAsMarkdown(
     body.push(`> ${tweet.quotedTweet.url}`)
   }
 
+  // ロケールに応じた日時フォーマット
+  const uiLanguage = chrome.i18n.getUILanguage()
+  const locale = uiLanguage.startsWith('ja') ? 'ja-JP' : 'en-US'
+  const formattedDate = savedAt.toLocaleString(locale)
+  const savedAtText = chrome.i18n.getMessage('mdSavedAt', [formattedDate])
+    || `保存日時: ${formattedDate}`
+
   body.push('')
   body.push('---')
-  body.push(`*保存日時: ${savedAt.toLocaleString('ja-JP')}*`)
+  body.push(`*${savedAtText}*`)
 
   return frontmatter + body.join('\n')
 }
@@ -401,12 +423,20 @@ export function formatThreadAsMarkdown(
     '---',
     `author_name: "${thread.authorName}"`,
     `author_url: "${profileUrl}"`,
-    `thread_count: ${thread.tweets.length}`,
-    `posted_at: ${postedAt?.toISOString() ?? 'unknown'}`,
-    `saved_at: ${savedAt.toISOString()}`,
-    `original_url: ${thread.originalUrl}`,
-    `post_id: "${firstTweet.id}"`,
   ]
+
+  // BIOがある場合（ポスト詳細ページで取得できた場合のみ）
+  if (thread.authorBio) {
+    // BIOに含まれる改行やダブルクォートをエスケープ
+    const escapedBio = thread.authorBio.replace(/"/g, '\\"').replace(/\n/g, ' ')
+    frontmatterLines.push(`author_bio: "${escapedBio}"`)
+  }
+
+  frontmatterLines.push(`thread_count: ${thread.tweets.length}`)
+  frontmatterLines.push(`posted_at: ${postedAt?.toISOString() ?? 'unknown'}`)
+  frontmatterLines.push(`saved_at: ${savedAt.toISOString()}`)
+  frontmatterLines.push(`original_url: ${thread.originalUrl}`)
+  frontmatterLines.push(`post_id: "${firstTweet.id}"`)
 
   // 画像がある場合
   if (totalImageCount > 0) {
@@ -422,9 +452,13 @@ export function formatThreadAsMarkdown(
 
   const frontmatter = frontmatterLines.join('\n')
 
+  // i18n でタイトルを取得
+  const threadTitle = chrome.i18n.getMessage('mdThreadTitle', [thread.authorUsername])
+    || `@${thread.authorUsername} のスレッド`
+
   const body = [
     '',
-    `# @${thread.authorUsername} のスレッド`,
+    `# ${threadTitle}`,
     '',
   ]
 
@@ -447,8 +481,15 @@ export function formatThreadAsMarkdown(
     }
   })
 
+  // ロケールに応じた日時フォーマット
+  const uiLanguage = chrome.i18n.getUILanguage()
+  const locale = uiLanguage.startsWith('ja') ? 'ja-JP' : 'en-US'
+  const formattedDate = savedAt.toLocaleString(locale)
+  const savedAtText = chrome.i18n.getMessage('mdSavedAt', [formattedDate])
+    || `保存日時: ${formattedDate}`
+
   body.push('---')
-  body.push(`*保存日時: ${savedAt.toLocaleString('ja-JP')}*`)
+  body.push(`*${savedAtText}*`)
 
   return frontmatter + body.join('\n')
 }

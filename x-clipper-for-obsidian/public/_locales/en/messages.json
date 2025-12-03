@@ -186,5 +186,43 @@
   "settingsClose": {
     "message": "Close settings",
     "description": "Settings button aria-label when open"
+  },
+  "mdPostTitle": {
+    "message": "@$username$'s post",
+    "description": "Markdown heading for single post",
+    "placeholders": {
+      "username": {
+        "content": "$1",
+        "example": "username"
+      }
+    }
+  },
+  "mdThreadTitle": {
+    "message": "@$username$'s thread",
+    "description": "Markdown heading for thread",
+    "placeholders": {
+      "username": {
+        "content": "$1",
+        "example": "username"
+      }
+    }
+  },
+  "mdQuotedSource": {
+    "message": "Quoted",
+    "description": "Markdown heading for quoted tweet"
+  },
+  "mdSavedAt": {
+    "message": "Saved at: $datetime$",
+    "description": "Saved at footer text",
+    "placeholders": {
+      "datetime": {
+        "content": "$1",
+        "example": "2024/1/1 12:00:00"
+      }
+    }
+  },
+  "mdQuoteUnavailable": {
+    "message": "(Quoted content unavailable)",
+    "description": "Message when quoted tweet content is unavailable"
   }
 }

@@ -18,6 +18,8 @@ export interface TweetData {
   authorUsername: string
   /** 投稿者の表示名 */
   authorName: string
+  /** 投稿者のプロフィール（BIO） */
+  authorBio?: string
   /** 元のツイートURL */
   url: string
   /** 投稿日時（ISO形式） */
@@ -34,6 +36,8 @@ export interface ThreadData {
   authorUsername: string
   /** 大元のツイート作者の表示名 */
   authorName: string
+  /** 大元のツイート作者のプロフィール（BIO） */
+  authorBio?: string
   /** スレッド内のツイート配列（時系列順） */
   tweets: TweetData[]
   /** 大元のツイートURL */

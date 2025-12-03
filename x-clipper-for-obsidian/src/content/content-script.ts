@@ -7,6 +7,135 @@ import type { TweetData, ThreadData, ThreadExtractionResult } from '@/types'
 interface TweetImageData {
   tweetId: string
   imageUrls: string[]
+  authorBio?: string
+}
+
+/**
+ * 投稿者のBIO（プロフィール）を抽出
+ * ホバーカードを開いてBIOを取得する非同期関数
+ */
+async function extractAuthorBioAsync(): Promise<string | undefined> {
+  // ポスト詳細ページかどうかを確認（/status/ を含むURL）
+  if (!window.location.pathname.includes('/status/')) {
+    return undefined
+  }
+
+  // すでにUserDescriptionが存在するか確認（プロフィールページの場合など）
+  const existingBio = document.querySelector('[data-testid="UserDescription"]')
+  if (existingBio?.textContent) {
+    return existingBio.textContent.trim()
+  }
+
+  // ツイート内のユーザーアバターを探す
+  const tweetArticle = document.querySelector('article[data-testid="tweet"]')
+  if (!tweetArticle) {
+    return undefined
+  }
+
+  // ホバー対象を探す（ユーザー名リンクがホバーカードをトリガーしやすい）
+  const userNameContainer = tweetArticle.querySelector('[data-testid="User-Name"]')
+  const userNameLink = userNameContainer?.querySelector('a[role="link"]')
+
+  // アバターも取得（フォールバック用）
+  const userAvatarContainer = tweetArticle.querySelector('[data-testid="Tweet-User-Avatar"]')
+  const avatarLink = userAvatarContainer?.querySelector('a[role="link"]')
+
+  // ユーザー名リンクを優先、なければアバター
+  const targetElement = userNameLink || avatarLink
+  if (!targetElement) {
+    return undefined
+  }
+
+  const rect = targetElement.getBoundingClientRect()
+
+  // 複数のイベントタイプを試す
+  const eventOptions = {
+    bubbles: true,
+    cancelable: true,
+    view: window,
+    clientX: rect.left + rect.width / 2,
+    clientY: rect.top + rect.height / 2,
+  }
+
+  // pointerenter, mouseenter, mouseover を順番に試す
+  targetElement.dispatchEvent(new PointerEvent('pointerenter', eventOptions))
+  targetElement.dispatchEvent(new MouseEvent('mouseenter', eventOptions))
+  targetElement.dispatchEvent(new MouseEvent('mouseover', eventOptions))
+
+  // ホバーカードが表示されるのを待つ（最大3秒）
+  let bio: string | undefined
+  for (let i = 0; i < 30; i++) {
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    const hoverCard = document.querySelector('[data-testid="HoverCard"]')
+    if (!hoverCard) continue
+
+    // 方法1: UserDescription（data-testid）を探す
+    const hoverCardBio = hoverCard.querySelector('[data-testid="UserDescription"]')
+    if (hoverCardBio?.textContent) {
+      bio = hoverCardBio.textContent.trim()
+      break
+    }
+
+    // 方法2: div[dir="auto"]からBIOを探す
+    // 「クリックして〜をフォロー」などのボタンテキストを除外
+    const textElements = hoverCard.querySelectorAll('div[dir="auto"]')
+    for (const el of textElements) {
+      const text = el.textContent?.trim()
+      if (!text || text.length < 10) continue
+
+      // ボタンテキストやユーザー名を除外
+      if (text.startsWith('クリックして')) continue
+      if (text.startsWith('Click to')) continue
+      if (text.startsWith('@')) continue
+
+      // フォローボタン内のテキストを除外（親要素がbuttonの場合）
+      if (el.closest('button')) continue
+
+      // 残ったテキストがBIO
+      bio = text
+      break
+    }
+
+    if (bio) break
+  }
+
+  // ホバーを解除
+  targetElement.dispatchEvent(new PointerEvent('pointerleave', eventOptions))
+  targetElement.dispatchEvent(new MouseEvent('mouseleave', eventOptions))
+  targetElement.dispatchEvent(new MouseEvent('mouseout', eventOptions))
+
+  return bio
+}
+
+/**
+ * 投稿者のBIO（プロフィール）を抽出（同期版 - 後方互換性のため）
+ */
+function extractAuthorBio(): string | undefined {
+  // ポスト詳細ページかどうかを確認（/status/ を含むURL）
+  if (!window.location.pathname.includes('/status/')) {
+    return undefined
+  }
+
+  // すでにUserDescriptionが存在するか確認
+  const existingBio = document.querySelector('[data-testid="UserDescription"]')
+  if (existingBio?.textContent) {
+    return existingBio.textContent.trim()
+  }
+
+  // ホバーカード内のBIO
+  const hoverCardBio = document.querySelector('[data-testid="HoverCard"] [data-testid="UserDescription"]')
+  if (hoverCardBio?.textContent) {
+    return hoverCardBio.textContent.trim()
+  }
+
+  // レイヤー内のBIO
+  const layerBio = document.querySelector('#layers [data-testid="UserDescription"]')
+  if (layerBio?.textContent) {
+    return layerBio.textContent.trim()
+  }
+
+  return undefined
 }
 
 /**
@@ -82,17 +211,36 @@ function extractTweetImages(): TweetImageData | null {
   // 重複を除去
   const uniqueUrls = [...new Set(imageUrls)]
 
+  // BIOを取得（ポスト詳細ページでのみ）
+  const authorBio = extractAuthorBio()
+
   return {
     tweetId,
     imageUrls: uniqueUrls,
+    authorBio,
   }
 }
 
 // メッセージリスナー
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === 'GET_TWEET_IMAGES') {
-    const result = extractTweetImages()
-    sendResponse(result)
+    // 非同期でBIOを取得してから返す
+    (async () => {
+      const result = extractTweetImages()
+      if (!result) {
+        sendResponse(null)
+        return
+      }
+      // 同期版でBIOが取れなかった場合、非同期版で再試行
+      if (!result.authorBio) {
+        const asyncBio = await extractAuthorBioAsync()
+        if (asyncBio) {
+          result.authorBio = asyncBio
+        }
+      }
+      sendResponse(result)
+    })()
+    return true // 非同期レスポンスのため
   } else if (message.type === 'GET_THREAD_DATA') {
     const result = extractThread()
     sendResponse(result)
@@ -159,11 +307,15 @@ function extractTweetFromArticle(article: Element): TweetData | null {
   const timeElement = article.querySelector('time')
   const createdAt = timeElement?.getAttribute('datetime') ?? undefined
 
+  // BIOを取得（ポスト詳細ページでのみ）
+  const authorBio = extractAuthorBio()
+
   return {
     id: tweetId,
     text: tweetText,
     authorUsername: username,
     authorName: displayName,
+    authorBio,
     url: `https://x.com/${username}/status/${tweetId}`,
     createdAt,
     images: imageUrls,
@@ -204,6 +356,7 @@ function extractThread(): ThreadExtractionResult {
   // 最初のツイートの作者を大元の作者とする
   const originalAuthor = allTweets[0].authorUsername
   const originalAuthorName = allTweets[0].authorName
+  const originalAuthorBio = allTweets[0].authorBio
 
   // 同じ作者による連続ツイートのみを収集
   const threadTweets: TweetData[] = []
@@ -219,6 +372,7 @@ function extractThread(): ThreadExtractionResult {
   const thread: ThreadData = {
     authorUsername: originalAuthor,
     authorName: originalAuthorName,
+    authorBio: originalAuthorBio,
     tweets: threadTweets,
     originalUrl: window.location.href,
   }

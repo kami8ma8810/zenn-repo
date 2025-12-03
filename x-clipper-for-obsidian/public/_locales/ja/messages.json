@@ -186,5 +186,43 @@
   "settingsClose": {
     "message": "設定を閉じる",
     "description": "Settings button aria-label when open"
+  },
+  "mdPostTitle": {
+    "message": "@$username$ のポスト",
+    "description": "Markdown heading for single post",
+    "placeholders": {
+      "username": {
+        "content": "$1",
+        "example": "username"
+      }
+    }
+  },
+  "mdThreadTitle": {
+    "message": "@$username$ のスレッド",
+    "description": "Markdown heading for thread",
+    "placeholders": {
+      "username": {
+        "content": "$1",
+        "example": "username"
+      }
+    }
+  },
+  "mdQuotedSource": {
+    "message": "引用元",
+    "description": "Markdown heading for quoted tweet"
+  },
+  "mdSavedAt": {
+    "message": "保存日時: $datetime$",
+    "description": "Saved at footer text",
+    "placeholders": {
+      "datetime": {
+        "content": "$1",
+        "example": "2024/1/1 12:00:00"
+      }
+    }
+  },
+  "mdQuoteUnavailable": {
+    "message": "（引用元の内容を取得できませんでした）",
+    "description": "Message when quoted tweet content is unavailable"
   }
 }
