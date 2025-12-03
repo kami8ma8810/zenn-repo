@@ -514,15 +514,31 @@ function extractTweetFromArticle(article: Element): TweetData | null {
   const tweetTextElement = article.querySelector('[data-testid="tweetText"]')
   const tweetText = tweetTextElement?.textContent ?? ''
 
-  // 画像を取得
+  // 引用コンテナを特定（引用ツイートの画像を除外するため）
+  let quotedContainer: Element | null = null
+  const linkRoles = article.querySelectorAll('[role="link"]')
+  for (const linkRole of linkRoles) {
+    if (linkRole.querySelector('[data-testid="tweetText"]')) {
+      quotedContainer = linkRole
+      break
+    }
+  }
+  if (!quotedContainer) {
+    quotedContainer = article.querySelector('[data-testid="quoteTweet"]')
+      ?? article.querySelector('[data-testid="card.wrapper"]')
+  }
+
+  // 画像を取得（引用コンテナ内の画像を除外）
   const images = article.querySelectorAll('img[src*="pbs.twimg.com/media"]')
-  const imageUrls = Array.from(images).map(img => {
-    const src = img.getAttribute('src') ?? ''
-    // 高解像度版に変換
-    return src
-      .replace(/name=\w+/, 'name=large')
-      .replace(/format=webp/, 'format=jpg')
-  }).filter(Boolean)
+  const imageUrls = Array.from(images)
+    .filter(img => !quotedContainer || !quotedContainer.contains(img))
+    .map(img => {
+      const src = img.getAttribute('src') ?? ''
+      // 高解像度版に変換
+      return src
+        .replace(/name=\w+/, 'name=large')
+        .replace(/format=webp/, 'format=jpg')
+    }).filter(Boolean)
 
   // タイムスタンプを取得
   const timeElement = article.querySelector('time')

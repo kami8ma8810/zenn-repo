@@ -161,34 +161,42 @@ async function saveQuotedImagesToObsidian(
  * @param url ツイートURL
  * @param folder 保存先フォルダ
  * @param tags タグ配列
+ * @param existingTweet 既存のツイートデータ（スレッドから引き継ぐ場合）
  * @returns 保存したノートのパス
  */
-async function handleSaveTweet(url: string, folder: string, tags: string[]): Promise<string> {
+async function handleSaveTweet(url: string, folder: string, tags: string[], existingTweet?: TweetData): Promise<string> {
   const settings = await getSettings()
 
-  // ツイートデータを取得
-  const tweet = await fetchTweetViaOEmbed(url)
+  let tweet: TweetData
 
-  // Content Scriptから画像URLとBIOを取得（可能であれば）
-  const imageData = await getImagesFromContentScript()
+  if (existingTweet) {
+    // 既存のツイートデータがある場合はそれを使用
+    tweet = existingTweet
+  } else {
+    // ツイートデータを取得
+    tweet = await fetchTweetViaOEmbed(url)
 
-  if (imageData?.imageUrls && imageData.imageUrls.length > 0) {
-    tweet.images = imageData.imageUrls
-  }
-  // BIOが取得できた場合はセット（ポスト詳細ページでのみ取得される）
-  if (imageData?.authorBio) {
-    tweet.authorBio = imageData.authorBio
-  }
-  // 動画/GIF 情報をセット
-  if (imageData?.hasVideo) {
-    tweet.hasVideo = true
-  }
-  if (imageData?.hasAnimatedGif) {
-    tweet.hasAnimatedGif = true
-  }
-  // 引用ツイートの情報をセット（Content Script から取得した場合を優先）
-  if (imageData?.quotedTweet) {
-    tweet.quotedTweet = imageData.quotedTweet
+    // Content Scriptから画像URLとBIOを取得（可能であれば）
+    const imageData = await getImagesFromContentScript()
+
+    if (imageData?.imageUrls && imageData.imageUrls.length > 0) {
+      tweet.images = imageData.imageUrls
+    }
+    // BIOが取得できた場合はセット（ポスト詳細ページでのみ取得される）
+    if (imageData?.authorBio) {
+      tweet.authorBio = imageData.authorBio
+    }
+    // 動画/GIF 情報をセット
+    if (imageData?.hasVideo) {
+      tweet.hasVideo = true
+    }
+    if (imageData?.hasAnimatedGif) {
+      tweet.hasAnimatedGif = true
+    }
+    // 引用ツイートの情報をセット（Content Script から取得した場合を優先）
+    if (imageData?.quotedTweet) {
+      tweet.quotedTweet = imageData.quotedTweet
+    }
   }
 
   // ファイル名を生成（ツイートの出だし20文字）
@@ -253,17 +261,20 @@ async function getThreadFromBackgroundTab(url: string): Promise<ThreadData | nul
 
     // ページの読み込み完了を待つ
     await new Promise<void>((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        reject(new Error('Page load timeout'))
-      }, 30000) // 30秒タイムアウト
+      let timeoutId: ReturnType<typeof setTimeout>
 
       const listener = (changedTabId: number, changeInfo: { status?: string }) => {
         if (changedTabId === tabId && changeInfo.status === 'complete') {
-          clearTimeout(timeout)
+          clearTimeout(timeoutId)
           chrome.tabs.onUpdated.removeListener(listener)
           resolve()
         }
       }
+
+      timeoutId = setTimeout(() => {
+        chrome.tabs.onUpdated.removeListener(listener)
+        reject(new Error('Page load timeout'))
+      }, 30000) // 30秒タイムアウト
 
       chrome.tabs.onUpdated.addListener(listener)
     })
@@ -369,9 +380,9 @@ async function handleSaveThread(url: string, folder: string, tags: string[]): Pr
     throw new Error('スレッドを取得できませんでした')
   }
 
-  // 1件のみの場合は単一ツイートとして保存
+  // 1件のみの場合は単一ツイートとして保存（既存データを引き継ぐ）
   if (thread.tweets.length === 1) {
-    return handleSaveTweet(url, folder, tags)
+    return handleSaveTweet(url, folder, tags, thread.tweets[0])
   }
 
   // ファイル名を生成
