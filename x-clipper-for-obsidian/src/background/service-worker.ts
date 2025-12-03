@@ -3,6 +3,13 @@ import { fetchTweetViaOEmbed, formatTweetAsMarkdown, formatThreadAsMarkdown, gen
 import { createNote, getUniqueFilePath, downloadImage, saveImage, getImageExtension } from '@/lib/obsidian-api'
 import type { MessageType, TweetData, ThreadData, ThreadExtractionResult } from '@/types'
 
+/** Content Script から返される引用ツイートの情報 */
+interface QuotedTweetData {
+  text: string
+  url: string
+  authorUsername: string
+}
+
 /** Content Script から返される画像データ */
 interface TweetImageData {
   tweetId: string
@@ -12,6 +19,8 @@ interface TweetImageData {
   hasVideo: boolean
   /** アニメーションGIFが含まれているか */
   hasAnimatedGif: boolean
+  /** 引用ツイートの情報 */
+  quotedTweet?: QuotedTweetData
 }
 
 /**
@@ -137,6 +146,10 @@ async function handleSaveTweet(url: string, folder: string, tags: string[]): Pro
   }
   if (imageData?.hasAnimatedGif) {
     tweet.hasAnimatedGif = true
+  }
+  // 引用ツイートの情報をセット（Content Script から取得した場合を優先）
+  if (imageData?.quotedTweet) {
+    tweet.quotedTweet = imageData.quotedTweet
   }
 
   // ファイル名を生成（ツイートの出だし20文字）

@@ -4,6 +4,13 @@
 
 import type { TweetData, ThreadData, ThreadExtractionResult } from '@/types'
 
+/** 引用ツイートの情報 */
+interface QuotedTweetData {
+  text: string
+  url: string
+  authorUsername: string
+}
+
 interface TweetImageData {
   tweetId: string
   imageUrls: string[]
@@ -12,6 +19,8 @@ interface TweetImageData {
   hasVideo: boolean
   /** アニメーションGIFが含まれているか（ダウンロード不可） */
   hasAnimatedGif: boolean
+  /** 引用ツイートの情報 */
+  quotedTweet?: QuotedTweetData
 }
 
 /**
@@ -143,6 +152,63 @@ function extractAuthorBio(): string | undefined {
 }
 
 /**
+ * 引用ツイートを抽出
+ * @param article メインツイートの article 要素
+ * @returns 引用ツイートの情報、または undefined
+ */
+function extractQuotedTweet(article: Element): QuotedTweetData | undefined {
+  // 引用ツイートのコンテナを探す
+  // X/Twitter では引用ツイートは様々な data-testid で表示される
+  const quoteTweetContainer = article.querySelector('[data-testid="quoteTweet"]')
+    ?? article.querySelector('[data-testid="card.wrapper"]')
+
+  if (!quoteTweetContainer) {
+    return undefined
+  }
+
+  // 引用ツイートへのリンク（/status/ を含む）を探す
+  const statusLinks = quoteTweetContainer.querySelectorAll('a[href*="/status/"]')
+  let quotedUrl = ''
+  let quotedUsername = ''
+
+  for (const link of statusLinks) {
+    const href = link.getAttribute('href')
+    const match = href?.match(/\/([^/]+)\/status\/(\d+)/)
+    if (match) {
+      quotedUsername = match[1]
+      const tweetId = match[2]
+      quotedUrl = `https://x.com/${quotedUsername}/status/${tweetId}`
+      break
+    }
+  }
+
+  if (!quotedUrl) {
+    return undefined
+  }
+
+  // 引用ツイートのテキストを取得
+  // 引用ツイート内の tweetText 要素を探す
+  const quotedTextElement = quoteTweetContainer.querySelector('[data-testid="tweetText"]')
+  const quotedText = quotedTextElement?.textContent ?? ''
+
+  // ユーザー名をリンクから取得できなかった場合、User-Name から取得
+  if (!quotedUsername) {
+    const userNameElement = quoteTweetContainer.querySelector('[data-testid="User-Name"]')
+    const usernameLink = userNameElement?.querySelector('a[href^="/"]')
+    if (usernameLink) {
+      const href = usernameLink.getAttribute('href')
+      quotedUsername = href?.replace('/', '') ?? ''
+    }
+  }
+
+  return {
+    text: quotedText,
+    url: quotedUrl,
+    authorUsername: quotedUsername,
+  }
+}
+
+/**
  * 現在のページからツイートの画像URLを抽出
  */
 function extractTweetImages(): TweetImageData | null {
@@ -240,12 +306,16 @@ function extractTweetImages(): TweetImageData | null {
   // BIOを取得（ポスト詳細ページでのみ）
   const authorBio = extractAuthorBio()
 
+  // 引用ツイートを取得
+  const quotedTweet = targetArticle ? extractQuotedTweet(targetArticle) : undefined
+
   return {
     tweetId,
     imageUrls: uniqueUrls,
     authorBio,
     hasVideo,
     hasAnimatedGif,
+    quotedTweet,
   }
 }
 
