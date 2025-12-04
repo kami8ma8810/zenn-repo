@@ -544,24 +544,28 @@ function extractTweetFromArticle(article: Element): TweetData | null {
   const timeElement = article.querySelector('time')
   const createdAt = timeElement?.getAttribute('datetime') ?? undefined
 
-  // 動画の検出（引用コンテナ内は除外）
-  const videoElement = article.querySelector('video')
-  const hasVideo = videoElement !== null && (!quotedContainer || !quotedContainer.contains(videoElement))
+  // 動画の検出（引用コンテナ外に1つでもあればtrue）
+  const videoElements = article.querySelectorAll('video')
+  const hasVideo = Array.from(videoElements).some(
+    video => !quotedContainer || !quotedContainer.contains(video)
+  )
 
-  // アニメーションGIFの検出（引用コンテナ内は除外）
-  const gifBadge = article.querySelector('[aria-label*="GIF"]')
-  const gifTestId = article.querySelector('[data-testid="tweetGif"]')
-  const gifLabel = article.querySelector('[data-testid="tweetPhoto"] span')
+  // アニメーションGIFの検出（引用コンテナ外に1つでもあればtrue）
+  const gifBadges = article.querySelectorAll('[aria-label*="GIF"]')
+  const gifTestIds = article.querySelectorAll('[data-testid="tweetGif"]')
+  const gifLabels = article.querySelectorAll('[data-testid="tweetPhoto"] span')
 
-  const isGifBadgeInQuote = gifBadge && quotedContainer?.contains(gifBadge)
-  const isGifTestIdInQuote = gifTestId && quotedContainer?.contains(gifTestId)
-  const isGifLabelInQuote = gifLabel && quotedContainer?.contains(gifLabel)
+  const hasGifBadge = Array.from(gifBadges).some(
+    el => !quotedContainer || !quotedContainer.contains(el)
+  )
+  const hasGifTestId = Array.from(gifTestIds).some(
+    el => !quotedContainer || !quotedContainer.contains(el)
+  )
+  const hasGifLabel = Array.from(gifLabels).some(
+    el => (!quotedContainer || !quotedContainer.contains(el)) && el.textContent?.toUpperCase() === 'GIF'
+  )
 
-  const hasGifBadge = gifBadge && !isGifBadgeInQuote
-  const hasGifTestId = gifTestId && !isGifTestIdInQuote
-  const hasGifLabel = gifLabel && !isGifLabelInQuote && gifLabel.textContent?.toUpperCase() === 'GIF'
-
-  const hasAnimatedGif = !!(hasGifBadge || hasGifTestId || hasGifLabel)
+  const hasAnimatedGif = hasGifBadge || hasGifTestId || hasGifLabel
 
   // BIOを取得（ポスト詳細ページでのみ）
   const authorBio = extractAuthorBio()
