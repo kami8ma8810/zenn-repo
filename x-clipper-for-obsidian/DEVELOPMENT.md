@@ -110,12 +110,12 @@ npm test
 - [ ] マーキー画像: 1400x560px（オプション、トップページ掲載時に使用）
 - [ ] スクリーンショット: 1280x800px（最低1枚、最大5枚）
 
-#### 法的ドキュメント
-- [ ] プライバシーポリシー（**必須** - 個人データを扱う場合）
-- [ ] 利用規約（推奨）
+#### 法的ドキュメント ✅
+- [x] プライバシーポリシー（[docs/PRIVACY_POLICY.md](./docs/PRIVACY_POLICY.md)）
+- [x] 利用規約（[docs/TERMS_OF_SERVICE.md](./docs/TERMS_OF_SERVICE.md)）
   - 免責事項（Disclaimer of Warranties）
   - 責任制限（Limitation of Liability）
-  - ユーザー行動規範
+  - 著作権に関する注意（私的使用の範囲）
   - 知的財産権
 
 #### ストア申請
