@@ -102,13 +102,13 @@ npm test
 - [ ] 保存履歴の表示
 - [ ] お気に入りフォルダのクイックアクセス
 
-### Phase 4: Chrome Web Store公開（未実装）
+### Phase 4: Chrome Web Store公開
 
-#### 必要な画像アセット
-- [ ] 拡張機能アイコン: 128x128px（PNG、96x96の実サイズ + 16pxパディング）
-- [ ] 小プロモーション画像: 440x280px（**必須**）
-- [ ] マーキー画像: 1400x560px（オプション、トップページ掲載時に使用）
-- [ ] スクリーンショット: 1280x800px（最低1枚、最大5枚）
+#### 必要な画像アセット ✅
+- [x] 拡張機能アイコン: 128x128px（`public/icons/icon-128.png`）
+- [x] 小プロモーション画像: 440x280px（`public/icons/promo-small.png`）**必須**
+- [x] マーキー画像: 1400x560px（`public/icons/promo-marquee.png`）
+- [x] スクリーンショット: 1280x800px（`public/screenshots/screenshot-1.png`, `screenshot-2.png`）
 
 #### 法的ドキュメント ✅
 - [x] プライバシーポリシー（[docs/PRIVACY_POLICY.md](./docs/PRIVACY_POLICY.md)）
@@ -118,10 +118,14 @@ npm test
   - 著作権に関する注意（私的使用の範囲）
   - 知的財産権
 
-#### ストア申請
-- [ ] デベロッパーダッシュボードに登録
-- [ ] 説明文（日本語/英語）
-- [ ] カテゴリ選択
+#### ストア申請ドキュメント ✅
+- [x] 説明文（[docs/STORE_DESCRIPTION.md](./docs/STORE_DESCRIPTION.md)）
+- [x] 申請手順ガイド（[docs/STORE_SUBMISSION_GUIDE.md](./docs/STORE_SUBMISSION_GUIDE.md)）
+
+#### ストア申請作業（手動）
+- [ ] デベロッパーダッシュボードに登録（$5）
+- [ ] ZIP ファイルをアップロード
+- [ ] プライバシーポリシー URL を設定
 - [ ] 審査申請
 
 ---
